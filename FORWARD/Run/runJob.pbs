@@ -1,0 +1,41 @@
+#! /bin/sh -
+#
+#  Make sure I use the correct shell.
+#
+#PBS -S /bin/sh
+#
+#  Give the job a name
+#
+#PBS -N "NS8KM"
+#
+# Specify the project the job should be accounted on
+#PBS -A nn9253k
+#
+#  We want 2 hours on 32 cpu's:
+#
+#PBS -l walltime=48:00:00,mppwidth=256
+#
+#  The job needs 1000 MB memory per process:
+#PBS -l mppmem=1000mb
+#
+#  Send me an email on  a=abort, b=begin, e=end
+#
+#PBS -m abe
+#
+#  Use this email address (check that it is correct):
+#PBS -M trond.kristiansen@imr.no
+#
+#  Write the standard output of the job to file 'mpijob.out' (optional)
+#PBS -o ./NS8KM.out
+#
+#  Write the standard error of the job to file 'mpijob.err' (optional)
+#PBS -e ./NS8km.err
+#
+#  Make sure I am in the correct directory
+cd /work/$USER/NS8km/FORWARD/Run
+
+# For hexagon use:
+aprun -n 256 -m 1000 ./nl_oceanM ocean_ns8km.in
+
+# Return output at end to mpiexec as exit status:
+exit $?
