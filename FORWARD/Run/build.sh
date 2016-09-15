@@ -84,9 +84,9 @@ setenv ROMS_APPLICATION  NS8KM
 # Set a local environmental variable to define the path to the directories
 # where all this project's files are kept.
 
-setenv MY_ROOT_DIR          /work/trondk
+setenv MY_ROOT_DIR          /work/shared/imr
 
-setenv MY_PROJECT_DIR       ${MY_ROOT_DIR}/NS8km/FORWARD
+setenv MY_PROJECT_DIR       ${MY_ROOT_DIR}/NS8KM/FORWARD
 echo "Compiling ",$ROMS_APPLICATION
 # The path to the user's local current ROMS source code.
 #
@@ -99,7 +99,7 @@ echo "Compiling ",$ROMS_APPLICATION
 # to the code and inputs on differing machines.
 
 #
-setenv MY_ROMS_SRC          ${MY_ROOT_DIR}/src/roms3
+setenv MY_ROMS_SRC          ${MY_ROOT_DIR}/NS8KM/ROMS_v37_KATE
 
 # Set tunable CPP options.
 #

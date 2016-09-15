@@ -38,7 +38,7 @@
 #                                                                       :::
 #::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
-set parallel = 1
+set parallel = 1 
 set clean = 1
 
 while ( ($#argv) > 0 )
@@ -84,10 +84,10 @@ setenv ROMS_APPLICATION  NS8KM
 # Set a local environmental variable to define the path to the directories
 # where all this project's files are kept.
 
-setenv MY_ROOT_DIR          /work/trondk
+setenv MY_ROOT_DIR          /work/shared/imr
 
-setenv MY_PROJECT_DIR       ${MY_ROOT_DIR}/NS8km/IS4DVAR
-
+setenv MY_PROJECT_DIR       ${MY_ROOT_DIR}/NS8KM/IS4DVAR
+echo "Compiling ",$ROMS_APPLICATION
 # The path to the user's local current ROMS source code.
 #
 # If using svn locally, this would be the user's Working Copy Path (WCPATH).
@@ -99,7 +99,7 @@ setenv MY_PROJECT_DIR       ${MY_ROOT_DIR}/NS8km/IS4DVAR
 # to the code and inputs on differing machines.
 
 #
-setenv MY_ROMS_SRC          ${MY_ROOT_DIR}/src/roms3
+setenv MY_ROMS_SRC          ${MY_ROOT_DIR}/NS8KM/ROMS_v37_KATE
 
 # Set tunable CPP options.
 #
@@ -121,7 +121,6 @@ setenv MY_ROMS_SRC          ${MY_ROOT_DIR}/src/roms3
 # setenv USE_MPIF90          on
  setenv FORT                ftn
 
-setenv USE_ARPACK           on
 #setenv USE_OpenMP          on
 
 # setenv USE_DEBUG           on
