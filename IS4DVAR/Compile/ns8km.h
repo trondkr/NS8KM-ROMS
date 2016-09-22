@@ -127,7 +127,7 @@
 #undef  WRF_COUPLING       /* coupling to WRF atmospheric model */
 
 /* SEA ICE */
-#define ICE_MODEL          /* turn ON or OFF sea ice module */
+#undef ICE_MODEL          /* turn ON or OFF sea ice module */
 
 /* ATMOSPHERIC FORCING */
 #define BULK_FLUXES        /* turn ON or OFF bulk fluxes computation */
