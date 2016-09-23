@@ -145,7 +145,7 @@
 # define COOL_SKIN         /* turn ON or OFF cool skin correction *//* Ikke def hos Frode*/
 #endif
 
-#define ATM_PRESS          /* use to impose atmospheric pressure onto sea surface */
+#undef ATM_PRESS          /* use to impose atmospheric pressure onto sea surface */
 #define SOLAR_SOURCE       /* define solar radiation source term */
 #define SPECIFIC_HUMIDITY  /* if input is specific humidity in kg/kg */
 
