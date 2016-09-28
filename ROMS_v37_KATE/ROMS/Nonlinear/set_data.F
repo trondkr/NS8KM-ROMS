@@ -2132,8 +2132,7 @@
 #   endif
 #  endif
 
-#  ifdef ICE_MODEl
-      IF (LaiCLM(ng)) THEN
+#  ifdef AICLIMATOLOGY
 #   ifdef ANA_AICLIMA
         CALL ana_aiclima (ng, tile, iNLM)
 #   else
@@ -2143,47 +2142,22 @@
      &                       CLIMA(ng)%aiclm,                           &
      &                       update)
         IF (exit_flag.ne.NoError) RETURN
+#   endif
+#  endif
+#  ifdef HICLIMATOLOGY
+#   ifdef ANA_HICLIMA
+        CALL ana_hiclima (ng, tile, iNLM)
+#   else
         CALL set_2dfld_tile (ng, tile, iNLM, idHIclm,                   &
      &                       LBi, UBi, LBj, UBj,                        &
      &                       CLIMA(ng)%hiclmG,                          &
      &                       CLIMA(ng)%hiclm,                           &
      &                       update)
         IF (exit_flag.ne.NoError) RETURN
-        CALL set_2dfld_tile (ng, tile, iNLM, idHSNclm,                  &
-     &                       LBi, UBi, LBj, UBj,                        &
-     &                       CLIMA(ng)%hsnclmG,                         &
-     &                       CLIMA(ng)%hsnclm,                          &
-     &                       update)
-        IF (exit_flag.ne.NoError) RETURN
 #   endif
-      END IF
+#  endif
 
-      IF (LsiCLM(ng)) THEN
-#   ifdef ANA_SICLIMA
-        CALL ana_siclima (ng, tile, iNLM)
-#   else
-        CALL set_2dfld_tile (ng, tile, iNLM, idS11clm,                  &
-     &                       LBi, UBi, LBj, UBj,                        &
-     &                       CLIMA(ng)%sig11clmG,                       &
-     &                       CLIMA(ng)%sig11clm,                        &
-     &                       update)
-        IF (exit_flag.ne.NoError) RETURN
-        CALL set_2dfld_tile (ng, tile, iNLM, idS12clm,                  &
-     &                       LBi, UBi, LBj, UBj,                        &
-     &                       CLIMA(ng)%sig12clmG,                       &
-     &                       CLIMA(ng)%sig12clm,                        &
-     &                       update)
-        IF (exit_flag.ne.NoError) RETURN
-        CALL set_2dfld_tile (ng, tile, iNLM, idS22clm,                  &
-     &                       LBi, UBi, LBj, UBj,                        &
-     &                       CLIMA(ng)%sig22clmG,                       &
-     &                       CLIMA(ng)%sig22clm,                        &
-     &                       update)
-        IF (exit_flag.ne.NoError) RETURN
-#   endif
-      END IF
-
-      IF (LmiCLM(ng)) THEN
+#  ifdef MICLIMATOLOGY
 #   ifdef ANA_MICLIMA
         CALL ana_miclima (ng, tile, iNLM)
 #   else
@@ -2200,7 +2174,6 @@
      &                       update)
         IF (exit_flag.ne.NoError) RETURN
 #   endif
-      END IF
 #  endif
 # endif
 
@@ -2298,6 +2271,8 @@
      &                       OCEAN(ng)%f_zeta,                          &
      &                       update)
         IF (exit_flag.ne.NoError) RETURN
+
+#  ifndef SOLVE3D
 !
 !  Set 2D momentum forcing.
 !
@@ -2314,6 +2289,7 @@
      &                       OCEAN(ng)%f_vbar,                          &
      &                       update)
         IF (exit_flag.ne.NoError) RETURN
+#  endif
 
 #  ifdef SOLVE3D
 !

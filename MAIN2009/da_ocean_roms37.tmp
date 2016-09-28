@@ -885,37 +885,16 @@ Dout(iTvdif) == T T     ! temp_vdiff, ...    vertical diffusion
 
     NFFILES == 10                          ! number of unique forcing files
  
-FRCNAME ==      /work/shared/imr/NS8KM/FORCING/ATMOS/nordsjoen_8km_Pair_2010.nc |
-                /work/shared/imr/NS8KM/FORCING/ATMOS/nordsjoen_8km_Pair_2011.nc |
-                /work/shared/imr/NS8KM/FORCING/ATMOS/ns8km_Pair_2012.nc |
-                /work/shared/imr/NS8KM/FORCING/ATMOS/ns8km_Pair_2013.nc \
-                /work/shared/imr/NS8KM/FORCING/ATMOS/nordsjoen_8km_Qair_2010.nc |
-                /work/shared/imr/NS8KM/FORCING/ATMOS/nordsjoen_8km_Qair_2011.nc |
-                /work/shared/imr/NS8KM/FORCING/ATMOS/ns8km_Qair_2012.nc |
-                /work/shared/imr/NS8KM/FORCING/ATMOS/ns8km_Qair_2013.nc \
-                /work/shared/imr/NS8KM/FORCING/ATMOS/nordsjoen_8km_Tair_2010.nc |
-                /work/shared/imr/NS8KM/FORCING/ATMOS/nordsjoen_8km_Tair_2011.nc |
-                /work/shared/imr/NS8KM/FORCING/ATMOS/ns8km_Tair_2012.nc |
-                /work/shared/imr/NS8KM/FORCING/ATMOS/ns8km_Tair_2013.nc \
-                /work/shared/imr/NS8KM/FORCING/ATMOS/nordsjoen_8km_cloud_2010.nc |
-                /work/shared/imr/NS8KM/FORCING/ATMOS/nordsjoen_8km_cloud_2011.nc |
-                /work/shared/imr/NS8KM/FORCING/ATMOS/ns8km_cloud_2012.nc |
-                /work/shared/imr/NS8KM/FORCING/ATMOS/ns8km_cloud_2013.nc \
-                /work/shared/imr/NS8KM/FORCING/ATMOS/nordsjoen_8km_rain_2010.nc |
-                /work/shared/imr/NS8KM/FORCING/ATMOS/nordsjoen_8km_rain_2011.nc |
-                /work/shared/imr/NS8KM/FORCING/ATMOS/ns8km_rain_2012.nc |
-                /work/shared/imr/NS8KM/FORCING/ATMOS/ns8km_rain_2013.nc \
-                /work/shared/imr/NS8KM/FORCING/ATMOS/nordsjoen_8km_Uwind_2010.nc |
-                /work/shared/imr/NS8KM/FORCING/ATMOS/nordsjoen_8km_Uwind_2011.nc |
-                /work/shared/imr/NS8KM/FORCING/ATMOS/ns8km_Uwind_2012.nc |
-                /work/shared/imr/NS8KM/FORCING/ATMOS/ns8km_Uwind_2013.nc \
-                /work/shared/imr/NS8KM/FORCING/ATMOS/nordsjoen_8km_Vwind_2010.nc |
-                /work/shared/imr/NS8KM/FORCING/ATMOS/nordsjoen_8km_Vwind_2011.nc |
-                /work/shared/imr/NS8KM/FORCING/ATMOS/ns8km_Vwind_2012.nc |
-                /work/shared/imr/NS8KM/FORCING/ATMOS/ns8km_Vwind_2013.nc \
+FRCNAME ==      /work/shared/imr/NS8KM/FORCING/ATMOS/ns8km_Pair_2014.nc \
+                /work/shared/imr/NS8KM/FORCING/ATMOS/ns8km_Qair_2014.nc \
+                /work/shared/imr/NS8KM/FORCING/ATMOS/ns8km_Tair_2014.nc \
+                /work/shared/imr/NS8KM/FORCING/ATMOS/ns8km_cloud_2014.nc \
+                /work/shared/imr/NS8KM/FORCING/ATMOS/ns8km_rain_2014.nc \
+                /work/shared/imr/NS8KM/FORCING/ATMOS/ns8km_Uwind_2014.nc \
+                /work/shared/imr/NS8KM/FORCING/ATMOS/ns8km_Vwind_2014.nc \
                 /work/shared/imr/NS8KM/FORCING/TIDES/nordsjoen_8km_tides.nc \
                 /work/shared/imr/NS8KM/FORCING/RIVER/nordsjoen_8km_river.nc \
-                /work/shared/imr/NS8KM/FORCING/GLORYS2V3/nordsjoen_8km_clim_GLORYS_20091115_to_20131215_SSS.nc
+                /work/shared/imr/NS8KM/FORCING/GLORYS2V3/nordsjoen_8km_clim_GLORYS_20130515_to_20141215_SSS_v2.nc
 
 ! Output NetCDF file names, [1:Ngrids].
 

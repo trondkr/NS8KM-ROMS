@@ -39,7 +39,7 @@
       CALL ad_misfit_tile (ng, tile, model,                             &
      &                     LBi, UBi, LBj, UBj,                          &
      &                     IminS, ImaxS, JminS, JmaxS,                  &
-     &                     kstp(ng),                                    &
+     &                     knew(ng),                                    &
 # ifdef SOLVE3D
      &                     nstp(ng),                                    &
 # endif
@@ -65,7 +65,7 @@
       SUBROUTINE ad_misfit_tile (ng, tile, model,                       &
      &                           LBi, UBi, LBj, UBj,                    &
      &                           IminS, ImaxS, JminS, JmaxS,            &
-     &                           kstp,                                  &
+     &                           knew,                                  &
 # ifdef SOLVE3D
      &                           nstp,                                  &
 # endif
@@ -99,7 +99,7 @@
       integer, intent(in) :: ng, tile, model
       integer, intent(in) :: LBi, UBi, LBj, UBj
       integer, intent(in) :: IminS, ImaxS, JminS, JmaxS
-      integer, intent(in) :: kstp
+      integer, intent(in) :: knew
 # ifdef SOLVE3D
       integer, intent(in) :: nstp
 # endif
@@ -160,7 +160,6 @@
 !-----------------------------------------------------------------------
 !
       IF (ProcessObs(ng)) THEN
-# ifndef BGQC
 !
 !  Set observation scale (ObsScale). The scale factor is used for
 !  screenning  or normalization of the observations. If only screening,
@@ -171,7 +170,6 @@
         DO iobs=1,Mobs
           ObsScale(iobs)=IniVal
         END DO
-# endif
 !
 !  Compute adjoint forcing terms at observation locations.
 !
@@ -179,19 +177,14 @@
           ADmodVal(iobs)=ObsErr(iobs)*                                  &
      &                   (NLmodVal(iobs)+TLmodVal(iobs)-ObsVal(iobs))
         END DO
-
-# ifdef BGQC
-!
-!  Reject observations that fail background quality control check.
-!
-        DO iobs=1,Nobs(ng)
-          ADmodVal(iobs)=ObsScale(iobs)*ADmodVal(iobs)
-        END DO
-# endif
 !
 !  Set adjoint time index to update.
 !
-        kfrc=kstp
+        IF (iic(ng).eq.1) THEN
+          kfrc=knew
+        ELSE
+          kfrc=1
+        END IF
 # ifdef SOLVE3D
         nfrc=nstp
 # endif
@@ -332,7 +325,7 @@
           END IF
         END DO
 # endif
-# if defined DISTRIBUTE && !defined BGQC
+# ifdef DISTRIBUTE
 !
 !-----------------------------------------------------------------------
 !  Collect all observations scaling factors.

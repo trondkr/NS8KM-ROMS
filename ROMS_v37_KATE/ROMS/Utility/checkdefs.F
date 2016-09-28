@@ -142,6 +142,18 @@
       Coptions(is:is+10)=' AGE_MEAN,'
       idriver=idriver+1
 #endif
+#ifdef AICLIMATOLOGY
+      IF (Master) WRITE (stdout,20) 'AICLIMATOLOGY',                    &
+     &   'Ice concentration climatology.'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+15)=' AICLIMATOLOGY,'
+#endif
+#ifdef AICLM_NUDGING
+      IF (Master) WRITE (stdout,20) 'AICLM_NUDGING',                    &
+     &   'Nudging to ice concentration climatology.'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+15)=' AICLM_NUDGING,'
+#endif
 #if defined ALBEDO && defined ANA_SRFLUX
       IF (Master) WRITE (stdout,20) 'ALBEDO',                           &
      &   'Shortwave radiation with albedo correction.'
@@ -171,12 +183,6 @@
      &   'Albedo read from a forcing file.'
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+13)=' ALBEDO_FILE,'
-#endif
-#ifdef ANA_AICLIMA
-      IF (Master) WRITE (stdout,20) 'ANA_AICLIMA',                      &
-     &   'Analytical ice tracer climatology.'
-      is=LEN_TRIM(Coptions)+1
-      Coptions(is:is+13)=' ANA_AICLIMA,'
 #endif
 #ifdef ANA_ALBEDO
       IF (Master) WRITE (stdout,20) 'ANA_ALBEDO',                       &
@@ -305,12 +311,6 @@
      &   'Analytical Land/Sea Masking.'
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+10)=' ANA_MASK,'
-#endif
-#ifdef ANA_MICLIMA
-      IF (Master) WRITE (stdout,20) 'ANA_MICLIMA',                      &
-     &   'Analytical ice momentum climatology.'
-      is=LEN_TRIM(Coptions)+1
-      Coptions(is:is+13)=' ANA_MICLIMA,'
 #endif
 #ifdef ANA_NUDGCOEF
       IF (ANY(Lnudging(:))) THEN
@@ -546,18 +546,6 @@
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+17)=' BEDLOAD_SOULSBY,'
 #endif
-#if defined BGQC && defined FOUR_DVAR
-      IF (Master) WRITE (stdout,20) 'BGQC',                             &
-     &   'Background quality control of observations.'
-      is=LEN_TRIM(Coptions)+1
-      Coptions(is:is+6)=' BGQC,'
-#endif
-#if defined BEOFS_ONLY && defined WEAK_CONSTRAINT
-      IF (Master) WRITE (stdout,20) 'BEOFS_ONLY',                       &
-     &   'Compute EOFs of the background error covariance matrix.'
-      is=LEN_TRIM(Coptions)+1
-      Coptions(is:is+12)=' BEOFS_ONLY,'
-#endif
 #ifdef BIO_FENNEL
       IF (Master) WRITE (stdout,20) 'BIO_FENNEL',                       &
      &   'Fennel et al. (2006) nitrogen-based model.'
@@ -571,12 +559,6 @@
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+12)=' BIO_GOANPZ,'
       ibiology=ibiology+1
-#endif
-#if defined BNORM && defined HESSIAN_SV
-      IF (Master) WRITE (stdout,20) 'BNORM',                            &
-     &   'Background normalization of Hessian singular vectors.'
-      is=LEN_TRIM(Coptions)+1
-      Coptions(is:is+7)=' BNORM,'
 #endif
 #if defined BIO_SEDIMENT && \
    (defined BIO_FENNEL   || defined NEMURO || defined ECOSIM)
@@ -850,12 +832,6 @@
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+10)=' ESMF_LIB,'
 #endif
-#ifdef ENKF_RESTART
-      IF (Master) WRITE (stdout,20) 'ENKF_RESTART',                     &
-     &   'Writting fields for offline Ensemble Kalman Filter.'
-      is=LEN_TRIM(Coptions)+1
-      Coptions(is:is+14)=' ENKF_RESTART,'
-#endif
 #ifdef ENSEMBLE
       IF (Master) WRITE (stdout,20) 'ENSEMBLE',                         &
      &   'Ensemble Forecasting Propagator.'
@@ -873,12 +849,6 @@
      &   'Writing out time-filtered output.'
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+10)=' FILTERED,'
-#endif
-#if defined EVOLVED_LCZ && defined FOUR_DVAR
-      IF (Master) WRITE (stdout,20) 'EVOLVED_LCZ',                      &
-     &   'Compute 4D-Var evolved Hessian singular vectors.'
-      is=LEN_TRIM(Coptions)+1
-      Coptions(is:is+13)=' EVOLVED_LCZ,'
 #endif
 #ifdef FLOATS
       IF (Master) WRITE (stdout,20) 'FLOATS',                           &
@@ -980,12 +950,6 @@
      &   'Globally periodic domain when interpolating forcing.'
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+17)=' GLOBAL_PERIODIC,'
-#endif
-#if defined GEOPOTENTIAL_HCONV && defined FOUR_DVAR && defined SOLVE3D
-      IF (Master) WRITE (stdout,20) 'GEOPOTENTIAL_HCONV',               &
-     &   'Horizontal convolutions along geopetential surfaces.'
-      is=LEN_TRIM(Coptions)+1
-      Coptions(is:is+20)=' GEOPOTENTIAL_HCONV,'
 #endif
 #ifdef GLS_MIXING
       IF (Master) WRITE (stdout,20) 'GLS_MIXING',                       &
@@ -1215,12 +1179,6 @@
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+21)=' LIMIT_STFLX_COOLING,'
 #endif
-#if defined LCZ_FINAL && defined FOUR_DVAR
-      IF (Master) WRITE (stdout,20) 'LCZ_FINAL',                        &
-     &   'Compute 4D-Var Hessian singular vectors.'
-      is=LEN_TRIM(Coptions)+1
-      Coptions(is:is+11)=' LCZ_FINAL,'
-#endif
 #ifdef LMD_BKPP
       IF (Master) WRITE (stdout,20) 'LMD_BKPP',                         &
      &   'KPP bottom boundary layer mixing.'
@@ -1342,6 +1300,18 @@
      &   'Melt ponds on ice.'
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+11)=' MELT_PONDS,'
+#endif
+#ifdef MICLIMATOLOGY
+      IF (Master) WRITE (stdout,20) 'MICLIMATOLOGY',                    &
+     &   'Ice momentum climatology.'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+15)=' MICLIMATOLOGY,'
+#endif
+#ifdef MICLM_NUDGING
+      IF (Master) WRITE (stdout,20) 'MICLM_NUDGING',                    &
+     &   'Nudging to ice momentum climatology.'
+      is=LEN_TRIM(Coptions)+1
+      Coptions(is:is+15)=' MICLM_NUDGING,'
 #endif
 #if defined MINRES && defined FOUR_DVAR
       IF (Master) WRITE (stdout,20) 'MINRES',                           &
@@ -1622,12 +1592,6 @@
       Coptions(is:is+18)=' OPT_PERTURBATION,'
       idriver=idriver+1
 #endif
-#ifdef OPTIC_MANIZZA
-      IF (Master) WRITE (stdout,20) 'OPTIC_MANIZZA',                     &
-     &   'Optics subroutine from Manizza.'
-      is=LEN_TRIM(Coptions)+1
-      Coptions(is:is+15)=' OPTIC_MANIZZA,'
-#endif
 #ifdef OPTIC_UMAINE
       IF (Master) WRITE (stdout,20) 'OPTIC_UMAINE',                     &
      &   'Optics subroutine from UMaine.'
@@ -1876,12 +1840,6 @@
      &   'Include difference between rho0 and surface density.'
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+10)=' RHO_SURF,'
-#endif
-#if defined RPCG && defined WEAK_CONSTRAINT
-      IF (Master) WRITE (stdout,20) 'RPCG',                             &
-     &   'Restricted B-preconditioned Lanczos minimization.'
-      is=LEN_TRIM(Coptions)+1
-      Coptions(is:is+6)=' RPCG,'
 #endif
 #if defined RP_AVERAGES && defined TL_IOMS
       IF (Master) WRITE (stdout,20) 'RP_AVERAGES',                      &
@@ -2183,12 +2141,6 @@
      &   'Compute astronomical (long-period tide) corrections.'
       is=LEN_TRIM(Coptions)+1
       Coptions(is:is+13)=' TIDES_ASTRO,'
-#endif
-#if defined TIME_CONV && defined WEAK_CONSTRAINT
-      IF (Master) WRITE (stdout,20) 'TIME_CONV',                        &
-     &   'Weak-constraint 4D-Var time convolution.'
-      is=LEN_TRIM(Coptions)+1
-      Coptions(is:is+11)=' TIME_CONV,'
 #endif
 #if defined TIME_INTERP_FLUX && defined NESTING && defined SOLVE3D
       IF (Master) WRITE (stdout,20) 'TIME_INTERP_FLUX',                 &
@@ -3072,6 +3024,7 @@
         exit_flag=5
       END IF
 #endif
+
 
       RETURN
       END SUBROUTINE checkdefs

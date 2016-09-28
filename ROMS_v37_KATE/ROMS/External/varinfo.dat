@@ -223,42 +223,6 @@
   'r3dvar'
   1.0d0
 
-'z_rho'                                            ! Output
-  'depth of RHO-points'
-  'meter'                                          ! [meter]
-  'z_rho, scalar, series'
-  'ocean_time'
-  'idpthR'
-  'r3dvar'
-  1.0d0
-
-'z_u'                                              ! Output
-  'depth of U-points'
-  'meter'                                          ! [meter]
-  'z_u, scalar, series'
-  'ocean_time'
-  'idpthU'
-  'u3dvar'
-  1.0d0
-
-'z_v'                                              ! Output
-  'depth of V-points'
-  'meter'                                          ! [meter]
-  'z_v, scalar, series'
-  'ocean_time'
-  'idpthV'
-  'v3dvar'
-  1.0d0
-
-'z_w'                                              ! Output
-  'depth of W-points'
-  'meter'                                          ! [meter]
-  'z_w, scalar, series'
-  'ocean_time'
-  'idpthW'
-  'w3dvar'
-  1.0d0
-
 !
 !------------------------------------------------------------------------------
 !  Wet/dry masks.
@@ -2044,7 +2008,7 @@
   1.0
 
 'Pwave_top'                                        ! Input
-  'wind-induced peak surface wave period'
+  'wind-induced surface wave Period'
   'second'                                         ! [s]
   'Pwave_top, scalar, series'
   'wave_time'
@@ -8010,24 +7974,6 @@
   'nulvar'
   1.0d0
 
-'obs_lon'                                         ! Input
-  'observation longitude'
-  'degrees_east'                                  ! [degrees_east]
-  'nulvar'
-  'datum'
-  'idOlon'
-  'nulvar'
-  1.0d0
-
-'obs_lat'                                         ! Input
-  'observation latitude'
-  'degrees_north'                                 ! [degrees_north]
-  'nulvar'
-  'datum'
-  'idOlat'
-  'nulvar'
-  1.0d0
-
 'obs_depth'                                        ! Input/Output
   'depth of observation'
   'meter'                                          ! [m]
@@ -8731,22 +8677,4 @@
   'bio_time'
   'idTSvar(iEupPrd)'
   'r3dvar'
-  1.0d0
-
-'BgError_value'                                    ! Output
-  'Background error at observation locations'
-  'nulvar'
-  'nulvar'
-  'datum'
-  'idBgEr'
-  'nulvar'
-  1.0d0
-
-'BgThresh_value'                                   ! Output
-  'Threshold for background quality control check of observations'
-  'nulvar'
-  'nulvar'
-  'datum'
-  'idBgTh'
-  'nulvar'
   1.0d0

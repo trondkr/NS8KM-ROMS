@@ -232,17 +232,6 @@
         IF (exit_flag.ne.NoError) RETURN
       END DO
 #endif
-!
-!-----------------------------------------------------------------------
-!  Create 4D-Var analysis file that used as initial conditions for the
-!  next data assimilation cycle.
-!-----------------------------------------------------------------------
-!
-      DO ng=1,Ngrids
-        LdefDAI(ng)=.TRUE.
-        CALL def_dai (ng)
-        IF (exit_flag.ne.NoError) RETURN
-      END DO
 
       RETURN
       END SUBROUTINE ROMS_initialize
@@ -260,7 +249,6 @@
       USE mod_parallel
       USE mod_fourdvar
       USE mod_iounits
-      USE mod_mixing
       USE mod_ncparam
       USE mod_netcdf
       USE mod_scalars
@@ -276,9 +264,6 @@
       USE cost_grad_mod, ONLY : cost_grad
       USE ini_adjust_mod, ONLY : ini_adjust
       USE ini_fields_mod, ONLY : ini_fields
-#ifdef ADJUST_BOUNDARY
-      USE mod_boundary, ONLY : initialize_boundary
-#endif
 #if defined ADJUST_STFLUX || defined ADJUST_WSTRESS
       USE mod_forces, ONLY : initialize_forces
 #endif
@@ -374,16 +359,6 @@
           END DO
         END IF
 #endif
-!
-!  Clear nonlinear mixing arrays.
-!
-        DO ng=1,Ngrids
-!$OMP PARALLEL
-          DO tile=first_tile(ng),last_tile(ng),+1
-            CALL initialize_mixing (ng, tile, iNLM)
-          END DO
-!$OMP END PARALLEL
-        END DO
 !
 !  Initialize nonlinear model. If outer=1, the model is initialized
 !  with the background or reference state. Otherwise, the model is
@@ -677,24 +652,6 @@
 !$OMP END PARALLEL
           IF (exit_flag.ne.NoError) RETURN
 
-#ifdef EVOLVED_LCZ
-!
-!  Write evolved tangent Lanczos vector into hessian netcdf file for use
-!  later.
-!
-!  NOTE: When using this option, it is important to set LhessianEV and
-!  Lprecond to FALSE in s4dvar.in, otherwise the evolved Lanczos vectors
-!  with be overwritten by the Hessian eigenvectors. The fix to this is to
-!  define a new netcdf file that contains the evolved Lanczos vectors.
-!
-          IF (inner.ne.0) THEN
-            DO ng=1,Ngrids
-              CALL wrt_evolved (ng, kstp(ng), nrhs(ng))
-              IF (exit_flag.ne.NoERRor) RETURN
-            END DO
-          END IF
-#endif
-
 #ifdef MULTIPLE_TLM
 !
 !  If multiple TLM history NetCDF files, close current NetCDF file.
@@ -748,9 +705,6 @@
               CALL initialize_ocean (ng, tile, iADM)
 #if defined ADJUST_STFLUX || defined ADJUST_WSTRESS
               CALL initialize_forces (ng, tile, iADM)
-#endif
-#ifdef ADJUST_BOUNDARY
-              CALL initialize_boundary (ng, tile, iADM)
 #endif
             END DO
 !$OMP END PARALLEL
@@ -1160,10 +1114,9 @@
 !
         DO ng=1,Ngrids
           Lfinp(ng)=LTLM1
-# if defined BULK_FLUXES && !defined NL_BULK_FLUXES
+# ifdef BULK_FLUXES
           CALL get_state (ng, iTLM, 1, ITL(ng)%name, Rec1, Lfinp(ng))
-# endif
-# if defined NL_BULK_FLUXES || !defined BULK_FLUXES
+# else
           CALL get_state (ng, iTLM, 1, ITL(ng)%name, Rec4, Lfinp(ng))
           Lcon=Lfinp(ng)
 !
@@ -1219,16 +1172,6 @@
         Fcount=HIS(ng)%Fcount
         HIS(ng)%Nrec(Fcount)=0
         WRITE (HIS(ng)%name,10) TRIM(FWD(ng)%base), Nouter
-      END DO
-!
-!  Clear nonlinear mixing arrays.
-!
-      DO ng=1,Ngrids
-!$OMP PARALLEL
-        DO tile=first_tile(ng),last_tile(ng),+1
-          CALL initialize_mixing (ng, tile, iNLM)
-        END DO
-!$OMP END PARALLEL
       END DO
 !
 !  Initialize nonlinear model with estimated initial conditions.
@@ -1356,24 +1299,7 @@
 !
 !  Local variable declarations.
 !
-      integer :: Fcount, ng, tile, thread
-!
-!-----------------------------------------------------------------------
-!  Write out 4D-Var analysis fields that used as initial conditions for
-!  the next data assimilation cycle.
-!-----------------------------------------------------------------------
-!
-#ifdef DISTRIBUTE
-      tile=MyRank
-#else
-      tile=-1
-#endif
-!
-      IF (exit_flag.eq.NoError) THEN
-        DO ng=1,Ngrids
-          CALL wrt_dai (ng, tile)
-        END DO
-      END IF
+      integer :: Fcount, ng, thread
 !
 !-----------------------------------------------------------------------
 !  Compute and report model-observation comparison statistics.

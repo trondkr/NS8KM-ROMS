@@ -456,7 +456,6 @@
 # endif
       integer :: Imin, Imax, Jmin, Jmax
       integer :: i, ic, ifile, is, j, jc, rec
-      integer :: NSUB
 # ifdef SOLVE3D
       integer :: UBt, itrc, k, kc, ntrc
 # endif
@@ -467,8 +466,7 @@
       real(r8), parameter :: Aspv = 0.0_r8
 # endif
       real(r8) :: cff, compute, my_time
-      real(r8) :: my_dot, Gdotp
-!
+
       real(r8), dimension(LBi:UBi,LBj:UBj) :: A2d
       real(r8), dimension(LBi:UBi,LBj:UBj) :: Hscale
 # ifdef SOLVE3D
@@ -487,9 +485,6 @@
 #  endif
 # endif
 
-# ifdef DISTRIBUTE
-      character (len=3  ) :: op_handle
-# endif
       character (len=40 ) :: Text
       character (len=256) :: ncname
 
@@ -601,7 +596,7 @@
                   END DO
                   IF (((Jstr.le.jc).and.(jc.le.Jend)).and.              &
      &                ((Istr.le.ic).and.(ic.le.Iend))) THEN
-                    A2d(ic,jc)=1.0_r8
+                    A2d(ic,jc)=Hscale(ic,jc)
                   END IF
                   CALL ad_conv_r2d_tile (ng, tile, iADM,                &
      &                                   LBi, UBi, LBj, UBj,            &
@@ -620,42 +615,22 @@
                       A2d(i,j)=A2d(i,j)*Hscale(i,j)
                     END DO
                   END DO
-!
-                  my_dot=0.0_r8
-                  DO j=JstrT,JendT
-                    DO i=IstrT,IendT
-                      my_dot=my_dot+A2d(i,j)*A2d(i,j)
-                    END DO
-                  END DO
-!
-!  Perform parallel global reduction operation: dot product.
-!
-# ifdef DISTRIBUTE
-                  NSUB=1                         ! distributed-memory
-# else
-                  IF (DOMAIN(ng)%SouthWest_Corner(tile).and.            &
-     &                DOMAIN(ng)%NorthEast_Corner(tile)) THEN
-                    NSUB=1                       ! non-tiled application
-                  ELSE
-                    NSUB=NtileX(ng)*NtileE(ng)   ! tiled application
-                  END IF
+                  CALL tl_conv_r2d_tile (ng, tile, iTLM,                &
+     &                                   LBi, UBi, LBj, UBj,            &
+     &                                   IminS, ImaxS, JminS, JmaxS,    &
+     &                                   NghostPoints,                  &
+     &                                   NHsteps(ifile,isFsur)/ifac,    &
+     &                                   DTsizeH(ifile,isFsur),         &
+     &                                   Kh,                            &
+     &                                   pm, pn, pmon_u, pnom_v,        &
+# ifdef MASKING
+     &                                   rmask, umask, vmask,           &
 # endif
-!$OMP CRITICAL (R2_DOT)
-                  IF (tile_count.eq.0) THEN
-                    Gdotp=my_dot
-                  ELSE
-                    Gdotp=Gdotp+my_dot
+     &                                   A2d)
+                  IF (((Jstr.le.jc).and.(jc.le.Jend)).and.              &
+     &                ((Istr.le.ic).and.(ic.le.Iend))) THEN
+                    cff=1.0_r8/SQRT(A2d(ic,jc))
                   END IF
-                  tile_count=tile_count+1
-                  IF (tile_count.eq.NSUB) THEN
-                    tile_count=0
-# ifdef DISTRIBUTE
-                    op_handle='SUM'
-                    CALL mp_reduce (ng, iTLM, 1, Gdotp, op_handle)
-# endif
-                    cff=1.0_r8/SQRT(Gdotp)
-                  END IF
-!$OMP END CRITICAL (R2_DOT)
                 ELSE
                   cff=0.0_r8
                 END IF
@@ -665,9 +640,9 @@
                 END IF
               END DO
             END DO
-            CALL dabc_r2d_tile (ng, tile,                               &
-     &                          LBi, UBi, LBj, UBj,                     &
-     &                          HnormR(:,:,ifile))
+            CALL bc_r2d_tile (ng, tile,                                 &
+     &                        LBi, UBi, LBj, UBj,                       &
+     &                        HnormR(:,:,ifile))
 # ifdef DISTRIBUTE
             CALL mp_exchange2d (ng, tile, iTLM, 1,                      &
      &                          LBi, UBi, LBj, UBj,                     &
@@ -733,7 +708,7 @@
                   END DO
                   IF (((Jstr.le.jc).and.(jc.le.Jend)).and.              &
      &                ((Istr.le.ic).and.(ic.le.Iend))) THEN
-                    A2d(ic,jc)=1.0_r8
+                    A2d(ic,jc)=Hscale(ic,jc)
                   END IF
                   CALL ad_conv_u2d_tile (ng, tile, iADM,                &
      &                                   LBi, UBi, LBj, UBj,            &
@@ -752,43 +727,22 @@
                       A2d(i,j)=A2d(i,j)*Hscale(i,j)
                     END DO
                   END DO
-!
-                  my_dot=0.0_r8
-                  DO j=JstrT,JendT
-                    DO i=IstrP,IendT
-                      my_dot=my_dot+A2d(i,j)*A2d(i,j)
-                    END DO
-                  END DO
-
-!
-!  Perform parallel global reduction operation: dot product.
-!
-# ifdef DISTRIBUTE
-                  NSUB=1                         ! distributed-memory
-# else
-                  IF (DOMAIN(ng)%SouthWest_Corner(tile).and.            &
-     &                DOMAIN(ng)%NorthEast_Corner(tile)) THEN
-                    NSUB=1                       ! non-tiled application
-                  ELSE
-                    NSUB=NtileX(ng)*NtileE(ng)   ! tiled application
-                  END IF
+                  CALL tl_conv_u2d_tile (ng, tile, iTLM,                &
+     &                                   LBi, UBi, LBj, UBj,            &
+     &                                   IminS, ImaxS, JminS, JmaxS,    &
+     &                                   NghostPoints,                  &
+     &                                   NHsteps(ifile,isUbar)/ifac,    &
+     &                                   DTsizeH(ifile,isUbar),         &
+     &                                   Kh,                            &
+     &                                   pm, pn, pmon_r, pnom_p,        &
+# ifdef MASKING
+     &                                   umask, pmask,                  &
 # endif
-!$OMP CRITICAL (U2_DOT)
-                  IF (tile_count.eq.0) THEN
-                    Gdotp=my_dot
-                  ELSE
-                    Gdotp=Gdotp+my_dot
+     &                                   A2d)
+                  IF (((Jstr.le.jc).and.(jc.le.Jend)).and.              &
+     &                ((Istr.le.ic).and.(ic.le.Iend))) THEN
+                    cff=1.0_r8/SQRT(A2d(ic,jc))
                   END IF
-                  tile_count=tile_count+1
-                  IF (tile_count.eq.NSUB) THEN
-                    tile_count=0
-# ifdef DISTRIBUTE
-                    op_handle='SUM'
-                    CALL mp_reduce (ng, iTLM, 1, Gdotp, op_handle)
-# endif
-                    cff=1.0_r8/SQRT(Gdotp)
-                  END IF
-!$OMP END CRITICAL (U2_DOT)
                 ELSE
                   cff=0.0_r8
                 END IF
@@ -798,9 +752,9 @@
                 END IF
               END DO
             END DO
-            CALL dabc_u2d_tile (ng, tile,                               &
-     &                          LBi, UBi, LBj, UBj,                     &
-     &                          HnormU(:,:,ifile))
+            CALL bc_u2d_tile (ng, tile,                                 &
+     &                        LBi, UBi, LBj, UBj,                       &
+     &                        HnormU(:,:,ifile))
 # ifdef DISTRIBUTE
             CALL mp_exchange2d (ng, tile, iTLM, 1,                      &
      &                          LBi, UBi, LBj, UBj,                     &
@@ -866,7 +820,7 @@
                   END DO
                   IF (((Jstr.le.jc).and.(jc.le.Jend)).and.              &
      &                ((Istr.le.ic).and.(ic.le.Iend))) THEN
-                    A2d(ic,jc)=1.0_r8
+                    A2d(ic,jc)=Hscale(ic,jc)
                   END IF
                   CALL ad_conv_v2d_tile (ng, tile, iADM,                &
      &                                   LBi, UBi, LBj, UBj,            &
@@ -885,42 +839,22 @@
                       A2d(i,j)=A2d(i,j)*Hscale(i,j)
                     END DO
                   END DO
-!
-                  my_dot=0.0_r8
-                  DO j=JstrP,JendT
-                    DO i=IstrT,IendT
-                      my_dot=my_dot+A2d(i,j)*A2d(i,j)
-                    END DO
-                  END DO
-!
-!  Perform parallel global reduction operation: dot product.
-!
-# ifdef DISTRIBUTE
-                  NSUB=1                         ! distributed-memory
-# else
-                  IF (DOMAIN(ng)%SouthWest_Corner(tile).and.            &
-     &                DOMAIN(ng)%NorthEast_Corner(tile)) THEN
-                    NSUB=1                       ! non-tiled application
-                  ELSE
-                    NSUB=NtileX(ng)*NtileE(ng)   ! tiled application
-                  END IF
+                  CALL tl_conv_v2d_tile (ng, tile, iTLM,                &
+     &                                   LBi, UBi, LBj, UBj,            &
+     &                                   IminS, ImaxS, JminS, JmaxS,    &
+     &                                   NghostPoints,                  &
+     &                                   NHsteps(ifile,isVbar)/ifac,    &
+     &                                   DTsizeH(ifile,isVbar),         &
+     &                                   Kh,                            &
+     &                                   pm, pn, pmon_p, pnom_r,        &
+# ifdef MASKING
+     &                                   vmask, pmask,                  &
 # endif
-!$OMP CRITICAL (V2_DOT)
-                  IF (tile_count.eq.0) THEN
-                    Gdotp=my_dot
-                  ELSE
-                    Gdotp=Gdotp+my_dot
+     &                                   A2d)
+                  IF (((Jstr.le.jc).and.(jc.le.Jend)).and.              &
+     &                ((Istr.le.ic).and.(ic.le.Iend))) THEN
+                    cff=1.0_r8/SQRT(A2d(ic,jc))
                   END IF
-                  tile_count=tile_count+1
-                  IF (tile_count.eq.NSUB) THEN
-                    tile_count=0
-# ifdef DISTRIBUTE
-                    op_handle='SUM'
-                    CALL mp_reduce (ng, iTLM, 1, Gdotp, op_handle)
-# endif
-                    cff=1.0_r8/SQRT(Gdotp)
-                  END IF
-!$OMP END CRITICAL (V2_DOT)
                 ELSE
                   cff=0.0_r8
                 END IF
@@ -930,9 +864,9 @@
                 END IF
               END DO
             END DO
-            CALL dabc_v2d_tile (ng, tile,                               &
-     &                          LBi, UBi, LBj, UBj,                     &
-     &                          HnormV(:,:,ifile))
+            CALL bc_v2d_tile (ng, tile,                                 &
+     &                        LBi, UBi, LBj, UBj,                       &
+     &                        HnormV(:,:,ifile))
 # ifdef DISTRIBUTE
             CALL mp_exchange2d (ng, tile, iTLM, 1,                      &
      &                          LBi, UBi, LBj, UBj,                     &
@@ -1006,7 +940,7 @@
                     END DO
                     IF (((Jstr.le.jc).and.(jc.le.Jend)).and.            &
      &                  ((Istr.le.ic).and.(ic.le.Iend))) THEN
-                      A3d(ic,jc,kc)=1.0_r8
+                      A3d(ic,jc,kc)=Vscale(ic,jc,kc)
                     END IF
                     CALL ad_conv_u3d_tile (ng, tile, iADM,              &
      &                                     LBi, UBi, LBj, UBj,          &
@@ -1031,44 +965,26 @@
                         END DO
                       END DO
                     END DO
-!
-                    my_dot=0.0_r8
-                    DO k=1,N(ng)
-                      DO j=JstrT,JendT
-                        DO i=IstrP,IendT
-                          my_dot=my_dot+A3d(i,j,k)*A3d(i,j,k)
-                        END DO
-                      END DO
-                    END DO
-!
-!  Perform parallel global reduction operation: dot product.
-!
-#  ifdef DISTRIBUTE
-                    NSUB=1                       ! distributed-memory
-#  else
-                    IF (DOMAIN(ng)%SouthWest_Corner(tile).and.          &
-     &                  DOMAIN(ng)%NorthEast_Corner(tile)) THEN
-                      NSUB=1                     ! non-tiled application
-                    ELSE
-                      NSUB=NtileX(ng)*NtileE(ng) ! tiled application
-                    END IF
+                    CALL tl_conv_u3d_tile (ng, tile, iTLM,              &
+     &                                     LBi, UBi, LBj, UBj,          &
+     &                                     1, N(ng),                    &
+     &                                     IminS, ImaxS, JminS, JmaxS,  &
+     &                                     NghostPoints,                &
+     &                                     NHsteps(ifile,isUvel)/ifac,  &
+     &                                     NVsteps(ifile,isUvel)/ifac,  &
+     &                                     DTsizeH(ifile,isUvel),       &
+     &                                     DTsizeV(ifile,isUvel),       &
+     &                                     Kh, Kv,                      &
+     &                                     pm, pn, pmon_r, pnom_p,      &
+#  ifdef MASKING
+     &                                     umask, pmask,                &
 #  endif
-!$OMP CRITICAL (R3_DOT)
-                    IF (tile_count.eq.0) THEN
-                      Gdotp=my_dot
-                    ELSE
-                      Gdotp=Gdotp+my_dot
+     &                                     Hz, z_r,                     &
+     &                                     A3d)
+                    IF (((Jstr.le.jc).and.(jc.le.Jend)).and.            &
+     &                  ((Istr.le.ic).and.(ic.le.Iend))) THEN
+                      cff=1.0_r8/SQRT(A3d(ic,jc,kc))
                     END IF
-                    tile_count=tile_count+1
-                    IF (tile_count.eq.NSUB) THEN
-                      tile_count=0
-#  ifdef DISTRIBUTE
-                      op_handle='SUM'
-                      CALL mp_reduce (ng, iTLM, 1, Gdotp, op_handle)
-#  endif
-                      cff=1.0_r8/SQRT(Gdotp)
-                    END IF
-!$OMP END CRITICAL (R3_DOT)
                   ELSE
                     cff=0.0_r8
                   END IF
@@ -1079,9 +995,9 @@
                 END DO
               END DO
             END DO
-            CALL dabc_u3d_tile (ng, tile,                               &
-     &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
-     &                          VnormU(:,:,:,ifile))
+            CALL bc_u3d_tile (ng, tile,                                 &
+     &                        LBi, UBi, LBj, UBj, 1, N(ng),             &
+     &                        VnormU(:,:,:,ifile))
 #  ifdef DISTRIBUTE
             CALL mp_exchange3d (ng, tile, iTLM, 1,                      &
      &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
@@ -1153,7 +1069,7 @@
                     END DO
                     IF (((Jstr.le.jc).and.(jc.le.Jend)).and.            &
      &                  ((Istr.le.ic).and.(ic.le.Iend))) THEN
-                      A3d(ic,jc,kc)=1.0_r8
+                      A3d(ic,jc,kc)=Vscale(ic,jc,kc)
                     END IF
                     CALL ad_conv_v3d_tile (ng, tile, iADM,              &
      &                                     LBi, UBi, LBj, UBj,          &
@@ -1178,44 +1094,26 @@
                         END DO
                       END DO
                     END DO
-!
-                    my_dot=0.0_r8
-                    DO k=1,N(ng)
-                      DO j=JstrP,JendT
-                        DO i=IstrT,IendT
-                          my_dot=my_dot+A3d(i,j,k)*A3d(i,j,k)
-                        END DO
-                      END DO
-                    END DO
-!
-!  Perform parallel global reduction operation: dot product.
-!
-#  ifdef DISTRIBUTE
-                    NSUB=1                       ! distributed-memory
-#  else
-                    IF (DOMAIN(ng)%SouthWest_Corner(tile).and.          &
-     &                  DOMAIN(ng)%NorthEast_Corner(tile)) THEN
-                      NSUB=1                     ! non-tiled application
-                    ELSE
-                      NSUB=NtileX(ng)*NtileE(ng) ! tiled application
-                    END IF
+                    CALL tl_conv_v3d_tile (ng, tile, iTLM,              &
+     &                                     LBi, UBi, LBj, UBj,          &
+     &                                     1, N(ng),                    &
+     &                                     IminS, ImaxS, JminS, JmaxS,  &
+     &                                     NghostPoints,                &
+     &                                     NHsteps(ifile,isVvel)/ifac,  &
+     &                                     NVsteps(ifile,isVvel)/ifac,  &
+     &                                     DTsizeH(ifile,isVvel),       &
+     &                                     DTsizeV(ifile,isVvel),       &
+     &                                     Kh, Kv,                      &
+     &                                     pm, pn, pmon_p, pnom_r,      &
+#  ifdef MASKING
+     &                                     vmask, pmask,                &
 #  endif
-!$OMP CRITICAL (V3_DOT)
-                    IF (tile_count.eq.0) THEN
-                      Gdotp=my_dot
-                    ELSE
-                      Gdotp=Gdotp+my_dot
+     &                                     Hz, z_r,                     &
+     &                                     A3d)
+                    IF (((Jstr.le.jc).and.(jc.le.Jend)).and.            &
+     &                  ((Istr.le.ic).and.(ic.le.Iend))) THEN
+                      cff=1.0_r8/SQRT(A3d(ic,jc,kc))
                     END IF
-                    tile_count=tile_count+1
-                    IF (tile_count.eq.NSUB) THEN
-                      tile_count=0
-#  ifdef DISTRIBUTE
-                      op_handle='SUM'
-                      CALL mp_reduce (ng, iTLM, 1, Gdotp, op_handle)
-#  endif
-                      cff=1.0_r8/SQRT(Gdotp)
-                    END IF
-!$OMP END CRITICAL (V3_DOT)
                   ELSE
                     cff=0.0_r8
                   END IF
@@ -1226,9 +1124,9 @@
                 END DO
               END DO
             END DO
-            CALL dabc_v3d_tile (ng, tile,                               &
-     &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
-     &                          VnormV(:,:,:,ifile))
+            CALL bc_v3d_tile (ng, tile,                                 &
+     &                        LBi, UBi, LBj, UBj, 1, N(ng),             &
+     &                        VnormV(:,:,:,ifile))
 #  ifdef DISTRIBUTE
             CALL mp_exchange3d (ng, tile, iTLM, 1,                      &
      &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
@@ -1325,7 +1223,7 @@
                       END DO
                       IF (((Jstr.le.jc).and.(jc.le.Jend)).and.          &
      &                    ((Istr.le.ic).and.(ic.le.Iend))) THEN
-                        A3d(ic,jc,kc)=1.0_r8
+                        A3d(ic,jc,kc)=Vscale(ic,jc,kc)
                       END IF
                       CALL ad_conv_r3d_tile (ng, tile, iADM,            &
      &                                       LBi, UBi, LBj, UBj,        &
@@ -1350,44 +1248,26 @@
                           END DO
                         END DO
                       END DO
-!
-                      my_dot=0.0_r8
-                      DO k=1,N(ng)
-                        DO j=JstrT,JendT
-                          DO i=IstrT,IendT
-                            my_dot=my_dot+A3d(i,j,k)*A3d(i,j,k)
-                          END DO
-                        END DO
-                      END DO
-!
-!  Perform parallel global reduction operation: dot product.
-!
-#  ifdef DISTRIBUTE
-                      NSUB=1                     ! distributed-memory
-#  else
-                      IF (DOMAIN(ng)%SouthWest_Corner(tile).and.        &
-     &                    DOMAIN(ng)%NorthEast_Corner(tile)) THEN
-                        NSUB=1                   ! non-tiled application
-                      ELSE
-                        NSUB=NtileX(ng)*NtileE(ng)   ! tiled application
-                      END IF
+                      CALL tl_conv_r3d_tile (ng, tile, iTLM,            &
+     &                                       LBi, UBi, LBj, UBj,        &
+     &                                       1, N(ng),                  &
+     &                                       IminS, ImaxS, JminS, JmaxS,&
+     &                                       NghostPoints,              &
+     &                                       NHsteps(ifile,is)/ifac,    &
+     &                                       NVsteps(ifile,is)/ifac,    &
+     &                                       DTsizeH(ifile,is),         &
+     &                                       DTsizeV(ifile,is),         &
+     &                                       Kh, Kv,                    &
+     &                                       pm, pn, pmon_u, pnom_v,    &
+#  ifdef MASKING
+     &                                       rmask, umask, vmask,       &
 #  endif
-!$OMP CRITICAL (R3_DOT)
-                      IF (tile_count.eq.0) THEN
-                        Gdotp=my_dot
-                      ELSE
-                        Gdotp=Gdotp+my_dot
+     &                                       Hz, z_r,                   &
+     &                                       A3d)
+                      IF (((Jstr.le.jc).and.(jc.le.Jend)).and.          &
+     &                    ((Istr.le.ic).and.(ic.le.Iend))) THEN
+                        cff=1.0_r8/SQRT(A3d(ic,jc,kc))
                       END IF
-                      tile_count=tile_count+1
-                      IF (tile_count.eq.NSUB) THEN
-                        tile_count=0
-#  ifdef DISTRIBUTE
-                        op_handle='SUM'
-                        CALL mp_reduce (ng, iTLM, 1, Gdotp, op_handle)
-#  endif
-                        cff=1.0_r8/SQRT(Gdotp)
-                      END IF
-!$OMP END CRITICAL (R3_DOT)
                     ELSE
                       cff=0.0_r8
                     END IF
@@ -1409,9 +1289,9 @@
           DO itrc=1,NT(ng)
             is=isTvar(itrc)
             IF (Cnorm(ifile,is)) THEN
-              CALL dabc_r3d_tile (ng, tile,                             &
-     &                            LBi, UBi, LBj, UBj, 1, N(ng),         &
-     &                            VnormR(:,:,:,ifile,itrc))
+              CALL bc_r3d_tile (ng, tile,                               &
+     &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
+     &                          VnormR(:,:,:,ifile,itrc))
 #  ifdef DISTRIBUTE
               CALL mp_exchange3d (ng, tile, iTLM, 1,                    &
      &                            LBi, UBi, LBj, UBj, 1, N(ng),         &
@@ -1491,7 +1371,7 @@
               Bmax=Mm(ng)
               IF (Lconvolve(ibry)) THEN
                 DO j=JstrT,JendT
-                  HscaleB(j)=1.0_r8/SQRT(on_r(i,j))
+                  HscaleB(j)=1.0_r8/SQRT(om_r(i,j)*on_r(i,j))
                 END DO
               END IF
             ELSE IF ((ibry.eq.isouth).or.(ibry.eq.inorth)) THEN
@@ -1500,7 +1380,7 @@
               Bmax=Lm(ng)
               IF (Lconvolve(ibry)) THEN
                 DO i=IstrT,IendT
-                  HscaleB(i)=1.0_r8/SQRT(om_r(i,j))
+                  HscaleB(i)=1.0_r8/SQRT(om_r(i,j)*on_r(i,j))
                 END DO
               END IF
             END IF
@@ -1529,7 +1409,7 @@
               IF (compute.gt.0.0_r8) THEN
                 B2d=0.0_r8
                 IF (bounded) THEN
-                  B2d(ib)=1.0_r8
+                  B2d(ib)=HscaleB(ib)
                 END IF
                 CALL ad_conv_r2d_bry_tile (ng, tile, iADM, ibry,        &
      &                                     BOUNDS(ng)%edge(:,r2dvar),   &
@@ -1545,19 +1425,6 @@
      &                                     rmask, umask, vmask,         &
 #  endif
      &                                     B2d)
-!
-!  HscaleB must be applied twice.
-!
-                IF ((ibry.eq.iwest).or.(ibry.eq.ieast)) THEN
-                  DO j=JstrT,JendT
-                    B2d(j)=B2d(j)*HscaleB(j)
-                  END DO
-                ELSE IF ((ibry.eq.isouth).or.(ibry.eq.inorth)) THEN
-                  DO i=IstrT,IendT
-                    B2d(i)=B2d(i)*HscaleB(i)
-                  END DO
-                END IF
-!
                 IF ((ibry.eq.iwest).or.(ibry.eq.ieast)) THEN
                   DO j=JstrT,JendT
                     B2d(j)=B2d(j)*HscaleB(j)
@@ -1630,7 +1497,7 @@
               Bmax=Mm(ng)
               IF (Lconvolve(ibry)) THEN
                 DO j=JstrT,JendT
-                  HscaleB(j)=1.0_r8/SQRT(on_u(i,j))
+                  HscaleB(j)=1.0_r8/SQRT(om_u(i,j)*on_u(i,j))
                 END DO
               END IF
             ELSE IF ((ibry.eq.isouth).or.(ibry.eq.inorth)) THEN
@@ -1644,7 +1511,7 @@
               END IF
               IF (Lconvolve(ibry)) THEN
                 DO i=IstrP,IendT
-                  HscaleB(i)=1.0_r8/SQRT(om_u(i,j))
+                  HscaleB(i)=1.0_r8/SQRT(om_u(i,j)*on_u(i,j))
                 END DO
               END IF
             END IF
@@ -1673,7 +1540,7 @@
               IF (compute.gt.0.0_r8) THEN
                 B2d=0.0_r8
                 IF (bounded) THEN
-                  B2d(ib)=1.0_r8
+                  B2d(ib)=HscaleB(ib)
                 END IF
                 CALL ad_conv_u2d_bry_tile (ng, tile, iADM, ibry,        &
      &                                     BOUNDS(ng)%edge(:,u2dvar),   &
@@ -1689,19 +1556,6 @@
      &                                     umask, pmask,                &
 #  endif
      &                                     B2d)
-!
-!  HscaleB must be applied twice.
-!
-                IF ((ibry.eq.iwest).or.(ibry.eq.ieast)) THEN
-                  DO j=JstrT,JendT
-                    B2d(j)=B2d(j)*HscaleB(j)
-                  END DO
-                ELSE IF ((ibry.eq.isouth).or.(ibry.eq.inorth)) THEN
-                  DO i=IstrP,IendT
-                    B2d(i)=B2d(i)*HscaleB(i)
-                  END DO
-                END IF
-!
                 IF ((ibry.eq.iwest).or.(ibry.eq.ieast)) THEN
                   DO j=JstrT,JendT
                     B2d(j)=B2d(j)*HscaleB(j)
@@ -1779,7 +1633,7 @@
               END IF
               IF (Lconvolve(ibry)) THEN
                 DO j=JstrT,JendT
-                  HscaleB(j)=1.0_r8/SQRT(on_v(i,j))
+                  HscaleB(j)=1.0_r8/SQRT(om_v(i,j)*on_v(i,j))
                 END DO
               END IF
             ELSE IF ((ibry.eq.isouth).or.(ibry.eq.inorth)) THEN
@@ -1788,7 +1642,7 @@
               Bmax=Lm(ng)
               IF (Lconvolve(ibry)) THEN
                 DO i=IstrT,IendT
-                  HscaleB(i)=1.0_r8/SQRT(om_v(i,j))
+                  HscaleB(i)=1.0_r8/SQRT(om_v(i,j)*on_v(i,j))
                 END DO
               END IF
             END IF
@@ -1817,7 +1671,7 @@
               IF (compute.gt.0.0_r8) THEN
                 B2d=0.0_r8
                 IF (bounded) THEN
-                  B2d(ib)=1.0_r8
+                  B2d(ib)=HscaleB(ib)
                 END IF
                 CALL ad_conv_v2d_bry_tile (ng, tile, iADM, ibry,        &
      &                                     BOUNDS(ng)%edge(:,v2dvar),   &
@@ -1833,19 +1687,6 @@
      &                                     vmask, pmask,                &
 #  endif
      &                                     B2d)
-!
-!  HscaleB must be applied twice.
-!
-                IF ((ibry.eq.iwest).or.(ibry.eq.ieast)) THEN
-                  DO j=JstrP,JendT
-                    B2d(j)=B2d(j)*HscaleB(j)
-                  END DO
-                ELSE IF ((ibry.eq.isouth).or.(ibry.eq.inorth)) THEN
-                  DO i=IstrT,IendT
-                    B2d(i)=B2d(i)*HscaleB(i)
-                  END DO
-                END IF
-!
                 IF ((ibry.eq.iwest).or.(ibry.eq.ieast)) THEN
                   DO j=JstrP,JendT
                     B2d(j)=B2d(j)*HscaleB(j)
@@ -1920,7 +1761,7 @@
               Bmax=Mm(ng)
               IF (Lconvolve(ibry)) THEN
                 DO j=JstrT,JendT
-                  cff=on_u(i,j)*0.5_r8
+                  cff=om_u(i,j)*on_u(i,j)*0.5_r8
                   DO k=1,N(ng)
                     VscaleB(j,k)=1.0_r8/                                &
      &                           SQRT(cff*(Hz(i-1,j,k)+Hz(i,j,k)))
@@ -1938,7 +1779,7 @@
               END IF
               IF (Lconvolve(ibry)) THEN
                 DO i=IstrP,IendT
-                  cff=om_u(i,j)*0.5_r8
+                  cff=om_u(i,j)*on_u(i,j)*0.5_r8
                   DO k=1,N(ng)
                     VscaleB(i,k)=1.0_r8/                                &
      &                           SQRT(cff*(Hz(i-1,j,k)+Hz(i,j,k)))
@@ -1972,7 +1813,7 @@
                 IF (compute.gt.0.0_r8) THEN
                   B3d=0.0_r8
                   IF (bounded) THEN
-                    B3d(ib,kb)=1.0_r8
+                    B3d(ib,kb)=VscaleB(ib,kb)
                   END IF
                   CALL ad_conv_u3d_bry_tile (ng, tile, iADM, ibry,      &
      &                                       BOUNDS(ng)%edge(:,u2dvar), &
@@ -1992,23 +1833,6 @@
 #   endif
      &                                       Hz, z_r,                   &
      &                                       B3d)
-!
-!  VscaleB must be applied twice.
-!
-                  IF ((ibry.eq.iwest).or.(ibry.eq.ieast)) THEN
-                    DO k=1,N(ng)
-                      DO j=JstrT,JendT
-                        B3d(j,k)=B3d(j,k)*VscaleB(j,k)
-                      END DO
-                    END DO
-                  ELSE IF ((ibry.eq.isouth).or.(ibry.eq.inorth)) THEN
-                    DO k=1,N(ng)
-                      DO i=IstrP,IendT
-                        B3d(i,k)=B3d(i,k)*VscaleB(i,k)
-                      END DO
-                    END DO
-                  END IF
-!
                   IF ((ibry.eq.iwest).or.(ibry.eq.ieast)) THEN
                     DO k=1,N(ng)
                       DO j=JstrT,JendT
@@ -2102,7 +1926,7 @@
               END IF
               IF (Lconvolve(ibry)) THEN
                 DO j=JstrP,JendT
-                  cff=on_v(i,j)*0.5_r8
+                  cff=om_v(i,j)*on_v(i,j)*0.5_r8
                   DO k=1,N(ng)
                     VscaleB(j,k)=1.0_r8/                                &
      &                           SQRT(cff*(Hz(i,j-1,k)+Hz(i,j,k)))
@@ -2115,7 +1939,7 @@
               Bmax=Lm(ng)
               IF (Lconvolve(ibry)) THEN
                 DO i=IstrT,IendT
-                  cff=om_v(i,j)*0.5_r8
+                  cff=om_v(i,j)*on_v(i,j)*0.5_r8
                   DO k=1,N(ng)
                     VscaleB(i,k)=1.0_r8/                                &
      &                           SQRT(cff*(Hz(i,j-1,k)+Hz(i,j,k)))
@@ -2149,7 +1973,7 @@
                 IF (compute.gt.0.0_r8) THEN
                   B3d=0.0_r8
                   IF (bounded) THEN
-                    B3d(ib,kb)=1.0_r8
+                    B3d(ib,kb)=VscaleB(ib,kb)
                   END IF
                   CALL ad_conv_v3d_bry_tile (ng, tile, iADM, ibry,      &
      &                                       BOUNDS(ng)%edge(:,v2dvar), &
@@ -2169,23 +1993,6 @@
 #   endif
      &                                       Hz, z_r,                   &
      &                                       B3d)
-!
-!  VscaleB must be applied twice.
-!
-                  IF ((ibry.eq.iwest).or.(ibry.eq.ieast)) THEN
-                    DO k=1,N(ng)
-                      DO j=JstrP,JendT
-                        B3d(j,k)=B3d(j,k)*VscaleB(j,k)
-                      END DO
-                    END DO
-                  ELSE IF ((ibry.eq.isouth).or.(ibry.eq.inorth)) THEN
-                    DO k=1,N(ng)
-                      DO i=IstrT,IendT
-                        B3d(i,k)=B3d(i,k)*VscaleB(i,k)
-                      END DO
-                    END DO
-                  END IF
-!
                   IF ((ibry.eq.iwest).or.(ibry.eq.ieast)) THEN
                     DO k=1,N(ng)
                       DO j=JstrP,JendT
@@ -2284,7 +2091,7 @@
                 Bmax=Mm(ng)
                 IF (Lconvolve(ibry)) THEN
                   DO j=JstrT,JendT
-                    cff=on_r(i,j)
+                    cff=om_r(i,j)*on_r(i,j)
                     DO k=1,N(ng)
                       VscaleB(j,k)=1.0_r8/SQRT(cff*Hz(i,j,k))
                     END DO
@@ -2296,7 +2103,7 @@
                 Bmax=Lm(ng)
                 IF (Lconvolve(ibry)) THEN
                   DO i=IstrT,IendT
-                    cff=om_r(i,j)
+                    cff=om_r(i,j)*on_r(i,j)
                     DO k=1,N(ng)
                       VscaleB(i,k)=1.0_r8/SQRT(cff*Hz(i,j,k))
                     END DO
@@ -2329,7 +2136,7 @@
                   IF (compute.gt.0.0_r8) THEN
                     B3d=0.0_r8
                     IF (bounded) THEN
-                      B3d(ib,kb)=1.0_r8
+                      B3d(ib,kb)=VscaleB(ib,kb)
                     END IF
                     CALL ad_conv_r3d_bry_tile (ng, tile, iADM, ibry,    &
      &                                         BOUNDS(ng)%edge(:,       &
@@ -2351,22 +2158,6 @@
 #   endif
      &                                         Hz, z_r,                 &
      &                                         B3d)
-!
-!  VscaleB must be applied twice.
-!
-                    IF ((ibry.eq.iwest).or.(ibry.eq.ieast)) THEN
-                      DO k=1,N(ng)
-                        DO j=JstrT,JendT
-                          B3d(j,k)=B3d(j,k)*VscaleB(j,k)
-                        END DO
-                      END DO
-                    ELSE IF ((ibry.eq.isouth).or.(ibry.eq.inorth)) THEN
-                      DO k=1,N(ng)
-                        DO i=IstrT,IendT
-                          B3d(i,k)=B3d(i,k)*VscaleB(i,k)
-                        END DO
-                      END DO
-                    END IF
                     IF ((ibry.eq.iwest).or.(ibry.eq.ieast)) THEN
                       DO k=1,N(ng)
                         DO j=JstrT,JendT
@@ -2527,7 +2318,7 @@
                 END DO
                 IF (((Jstr.le.jc).and.(jc.le.Jend)).and.                &
      &              ((Istr.le.ic).and.(ic.le.Iend))) THEN
-                  A2d(ic,jc)=1.0_r8
+                  A2d(ic,jc)=Hscale(ic,jc)
                 END IF
                 CALL ad_conv_u2d_tile (ng, tile, iADM,                  &
      &                                 LBi, UBi, LBj, UBj,              &
@@ -2546,42 +2337,22 @@
                     A2d(i,j)=A2d(i,j)*Hscale(i,j)
                   END DO
                 END DO
-!
-                my_dot=0.0_r8
-                DO j=JstrT,JendT
-                  DO i=IstrP,IendT
-                    my_dot=my_dot+A2d(i,j)*A2d(i,j)
-                  END DO
-                END DO
-!
-!  Perform parallel global reduction operation: dot product.
-!
-#   ifdef DISTRIBUTE
-                NSUB=1                           ! distributed-memory
-#   else
-                IF (DOMAIN(ng)%SouthWest_Corner(tile).and.              &
-     &              DOMAIN(ng)%NorthEast_Corner(tile)) THEN
-                  NSUB=1                         ! non-tiled application
-                ELSE
-                  NSUB=NtileX(ng)*NtileE(ng)     ! tiled application
-                END IF
+                CALL tl_conv_u2d_tile (ng, tile, iTLM,                  &
+     &                                 LBi, UBi, LBj, UBj,              &
+     &                                 IminS, ImaxS, JminS, JmaxS,      &
+     &                                 NghostPoints,                    &
+     &                                 NHsteps(rec,isUstr)/ifac,        &
+     &                                 DTsizeH(rec,isUstr),             &
+     &                                 Kh,                              &
+     &                                 pm, pn, pmon_r, pnom_p,          &
+#   ifdef MASKING
+     &                                 umask, pmask,                    &
 #   endif
-!$OMP CRITICAL (USTR_DOT)
-                IF (tile_count.eq.0) THEN
-                  Gdotp=my_dot
-                ELSE
-                  Gdotp=Gdotp+my_dot
+     &                                 A2d)
+                IF (((Jstr.le.jc).and.(jc.le.Jend)).and.                &
+     &              ((Istr.le.ic).and.(ic.le.Iend))) THEN
+                  cff=1.0_r8/SQRT(A2d(ic,jc))
                 END IF
-                tile_count=tile_count+1
-                IF (tile_count.eq.NSUB) THEN
-                  tile_count=0
-#   ifdef DISTRIBUTE
-                  op_handle='SUM'
-                  CALL mp_reduce (ng, iTLM, 1, Gdotp, op_handle)
-#   endif
-                  cff=1.0_r8/SQRT(Gdotp)
-                END IF
-!$OMP END CRITICAL (USTR_DOT)
               ELSE
                 cff=0.0_r8
               END IF
@@ -2591,9 +2362,9 @@
               END IF
             END DO
           END DO
-          CALL dabc_u2d_tile (ng, tile,                                 &
-     &                        LBi, UBi, LBj, UBj,                       &
-     &                        HnormSUS)
+          CALL bc_u2d_tile (ng, tile,                                   &
+     &                      LBi, UBi, LBj, UBj,                         &
+     &                      HnormSUS)
 #   ifdef DISTRIBUTE
           CALL mp_exchange2d (ng, tile, iTLM, 1,                        &
      &                        LBi, UBi, LBj, UBj,                       &
@@ -2659,7 +2430,7 @@
                 END DO
                 IF (((Jstr.le.jc).and.(jc.le.Jend)).and.                &
      &              ((Istr.le.ic).and.(ic.le.Iend))) THEN
-                  A2d(ic,jc)=1.0_r8
+                  A2d(ic,jc)=Hscale(ic,jc)
                 END IF
                 CALL ad_conv_v2d_tile (ng, tile, iADM,                  &
      &                                 LBi, UBi, LBj, UBj,              &
@@ -2678,42 +2449,22 @@
                     A2d(i,j)=A2d(i,j)*Hscale(i,j)
                   END DO
                 END DO
-!
-                my_dot=0.0_r8
-                DO j=JstrP,JendT
-                  DO i=IstrT,IendT
-                    my_dot=my_dot+A2d(i,j)*A2d(i,j)
-                  END DO
-                END DO
-!
-!  Perform parallel global reduction operation: dot product.
-!
-#   ifdef DISTRIBUTE
-                NSUB=1                           ! distributed-memory
-#   else
-                IF (DOMAIN(ng)%SouthWest_Corner(tile).and.              &
-     &              DOMAIN(ng)%NorthEast_Corner(tile)) THEN
-                  NSUB=1                         ! non-tiled application
-                ELSE
-                  NSUB=NtileX(ng)*NtileE(ng)     ! tiled application
-                END IF
+                CALL tl_conv_v2d_tile (ng, tile, iTLM,                  &
+     &                                 LBi, UBi, LBj, UBj,              &
+     &                                 IminS, ImaxS, JminS, JmaxS,      &
+     &                                 NghostPoints,                    &
+     &                                 NHsteps(rec,isVstr)/ifac,        &
+     &                                 DTsizeH(rec,isVstr),             &
+     &                                 Kh,                              &
+     &                                 pm, pn, pmon_p, pnom_r,          &
+#   ifdef MASKING
+     &                                 vmask, pmask,                    &
 #   endif
-!$OMP CRITICAL (VSTR_DOT)
-                IF (tile_count.eq.0) THEN
-                  Gdotp=my_dot
-                ELSE
-                  Gdotp=Gdotp+my_dot
+     &                                 A2d)
+                IF (((Jstr.le.jc).and.(jc.le.Jend)).and.                &
+     &              ((Istr.le.ic).and.(ic.le.Iend))) THEN
+                  cff=1.0_r8/SQRT(A2d(ic,jc))
                 END IF
-                tile_count=tile_count+1
-                IF (tile_count.eq.NSUB) THEN
-                  tile_count=0
-#   ifdef DISTRIBUTE
-                  op_handle='SUM'
-                  CALL mp_reduce (ng, iTLM, 1, Gdotp, op_handle)
-#   endif
-                  cff=1.0_r8/SQRT(Gdotp)
-                END IF
-!$OMP END CRITICAL (VSTR_DOT)
               ELSE
                 cff=0.0_r8
               END IF
@@ -2723,9 +2474,9 @@
               END IF
             END DO
           END DO
-          CALL dabc_v2d_tile (ng, tile,                                 &
-     &                        LBi, UBi, LBj, UBj,                       &
-     &                        HnormSVS)
+          CALL bc_v2d_tile (ng, tile,                                   &
+     &                      LBi, UBi, LBj, UBj,                         &
+     &                      HnormSVS)
 #   ifdef DISTRIBUTE
           CALL mp_exchange2d (ng, tile, iTLM, 1,                        &
      &                        LBi, UBi, LBj, UBj,                       &
@@ -2819,7 +2570,7 @@
                     END DO
                     IF (((Jstr.le.jc).and.(jc.le.Jend)).and.            &
      &                  ((Istr.le.ic).and.(ic.le.Iend))) THEN
-                      A2d(ic,jc)=1.0_r8
+                      A2d(ic,jc)=Hscale(ic,jc)
                     END IF
                     CALL ad_conv_r2d_tile (ng, tile, iADM,              &
      &                                     LBi, UBi, LBj, UBj,          &
@@ -2838,41 +2589,22 @@
                         A2d(i,j)=A2d(i,j)*Hscale(i,j)
                       END DO
                     END DO
-                    my_dot=0.0_r8
-                    DO j=JstrT,JendT
-                      DO i=IstrT,IendT
-                        my_dot=my_dot+A2d(i,j)*A2d(i,j)
-                      END DO
-                    END DO
-!
-!  Perform parallel global reduction operation: dot product.
-!
-#   ifdef DISTRIBUTE
-                    NSUB=1                       ! distributed-memory
-#   else
-                    IF (DOMAIN(ng)%SouthWest_Corner(tile).and.          &
-     &                  DOMAIN(ng)%NorthEast_Corner(tile)) THEN
-                      NSUB=1                     ! non-tiled application
-                    ELSE
-                      NSUB=NtileX(ng)*NtileE(ng)     ! tiled application
-                    END IF
+                    CALL tl_conv_r2d_tile (ng, tile, iTLM,              &
+     &                                     LBi, UBi, LBj, UBj,          &
+     &                                     IminS, ImaxS, JminS, JmaxS,  &
+     &                                     NghostPoints,                &
+     &                                     NHsteps(rec,is)/ifac,        &
+     &                                     DTsizeH(rec,is),             &
+     &                                     Kh,                          &
+     &                                     pm, pn, pmon_u, pnom_v,      &
+#   ifdef MASKING
+     &                                     rmask, umask, vmask,         &
 #   endif
-!$OMP CRITICAL (STFLX_DOT)
-                    IF (tile_count.eq.0) THEN
-                      Gdotp=my_dot
-                    ELSE
-                      Gdotp=Gdotp+my_dot
+     &                                     A2d)
+                    IF (((Jstr.le.jc).and.(jc.le.Jend)).and.            &
+     &                  ((Istr.le.ic).and.(ic.le.Iend))) THEN
+                      cff=1.0_r8/SQRT(A2d(ic,jc))
                     END IF
-                    tile_count=tile_count+1
-                    IF (tile_count.eq.NSUB) THEN
-                      tile_count=0
-#   ifdef DISTRIBUTE
-                      op_handle='SUM'
-                      CALL mp_reduce (ng, iTLM, 1, Gdotp, op_handle)
-#   endif
-                      cff=1.0_r8/SQRT(Gdotp)
-                    END IF
-!$OMP END CRITICAL (STFLX_DOT)
                   ELSE
                     cff=0.0_r8
                   END IF
@@ -2897,9 +2629,9 @@
           IF (Lstflux(itrc,ng)) THEN
             is=isTsur(itrc)
             IF (Cnorm(rec,is)) THEN
-              CALL dabc_r2d_tile (ng, tile,                             &
-     &                            LBi, UBi, LBj, UBj,                   &
-     &                            HnormSTF(:,:,itrc))
+              CALL bc_r2d_tile (ng, tile,                               &
+     &                          LBi, UBi, LBj, UBj,                     &
+     &                          HnormSTF(:,:,itrc))
 #   ifdef DISTRIBUTE
               CALL mp_exchange2d (ng, tile, iTLM, 1,                    &
      &                            LBi, UBi, LBj, UBj,                   &
@@ -3165,11 +2897,11 @@
 # endif
       integer :: start(4), total(4)
 
-      real(r8) :: Aavg, Amax, Amin, Asqr, FacAvg, FacSqr
-      real(r8) :: cff, my_time, val
+      real(r8) :: Aavg, Amax, Amin, FacAvg, FacSqr, cff, val
+      real(r8) :: my_time
 
 # ifdef ADJUST_BOUNDARY
-      real(r8) :: Bavg, Bmin, Bmax, Bsqr
+      real(r8) :: Bavg, Bmin, Bmax
 
       real(r8), parameter :: Aspv = 0.0_r8
 # endif
@@ -3265,7 +2997,7 @@
 !  Set randomization summation factors.
 !
           FacAvg=1.0_r8/REAL(Nrandom,r8)
-          FacSqr=SQRT(REAL(Nrandom,r8))
+          FacSqr=SQRT(REAL(Nrandom-1,r8))
 !
 !  Set time record index to write in normalization NetCDF file.
 !
@@ -3330,21 +3062,22 @@
             DO j=Jstr,Jend
               DO i=Istr,Iend
                 Aavg=FacAvg*A2davg(i,j)
-                Asqr=FacAvg*A2dsqr(i,j)
 # ifdef MASKING
                 IF (rmask(i,j).gt.0.0_r8) THEN
-                  HnormR(i,j,ifile)=1.0_r8/SQRT(Asqr)
+!!                HnormR(i,j,ifile)=FacSqr/SQRT(A2dsqr(i,j)-Aavg*Aavg)
+                  HnormR(i,j,ifile)=FacSqr/SQRT(A2dsqr(i,j))
                 ELSE
                   HnormR(i,j,ifile)=0.0_r8
                 END IF
 # else
-                HnormR(i,j,ifile)=1.0_r8/SQRT(Asqr)
+!!              HnormR(i,j,ifile)=FacSqr/SQRT(A2dsqr(i,j)-Aavg*Aavg)
+                HnormR(i,j,ifile)=FacSqr/SQRT(A2dsqr(i,j))
 # endif
               END DO
             END DO
-            CALL dabc_r2d_tile (ng, tile,                               &
-     &                          LBi, UBi, LBj, UBj,                     &
-     &                          HnormR(:,:,ifile))
+            CALL bc_r2d_tile (ng, tile,                                 &
+     &                        LBi, UBi, LBj, UBj,                       &
+     &                        HnormR(:,:,ifile))
 # ifdef DISTRIBUTE
             CALL mp_exchange2d (ng, tile, iTLM, 1,                      &
      &                          LBi, UBi, LBj, UBj,                     &
@@ -3410,21 +3143,22 @@
             DO j=Jstr,Jend
               DO i=IstrU,Iend
                 Aavg=FacAvg*A2davg(i,j)
-                Asqr=FacAvg*A2dsqr(i,j)
 # ifdef MASKING
                 IF (umask(i,j).gt.0.0_r8) THEN
-                  HnormU(i,j,ifile)=1.0_r8/SQRT(Asqr)
+!!                HnormU(i,j,ifile)=FacSqr/SQRT(A2dsqr(i,j)-Aavg*Aavg)
+                  HnormU(i,j,ifile)=FacSqr/SQRT(A2dsqr(i,j))
                 ELSE
                   HnormU(i,j,ifile)=0.0_r8
                 END IF
 # else
-                HnormU(i,j,ifile)=1.0_r8/SQRT(Asqr)
+!!              HnormU(i,j,ifile)=FacSqr/SQRT(A2dsqr(i,j)-Aavg*Aavg)
+                HnormU(i,j,ifile)=FacSqr/SQRT(A2dsqr(i,j))
 # endif
               END DO
             END DO
-            CALL dabc_u2d_tile (ng, tile,                               &
-     &                          LBi, UBi, LBj, UBj,                     &
-     &                          HnormU(:,:,ifile))
+            CALL bc_u2d_tile (ng, tile,                                 &
+     &                        LBi, UBi, LBj, UBj,                       &
+     &                        HnormU(:,:,ifile))
 # ifdef DISTRIBUTE
             CALL mp_exchange2d (ng, tile, iTLM, 1,                      &
      &                          LBi, UBi, LBj, UBj,                     &
@@ -3490,21 +3224,22 @@
             DO j=JstrV,Jend
               DO i=Istr,Iend
                 Aavg=FacAvg*A2davg(i,j)
-                Asqr=FacAvg*A2dsqr(i,j)
 # ifdef MASKING
                 IF (vmask(i,j).gt.0.0_r8) THEN
-                  HnormV(i,j,ifile)=1.0_r8/SQRT(Asqr)
+!!                HnormV(i,j,ifile)=FacSqr/SQRT(A2dsqr(i,j)-Aavg*Aavg)
+                  HnormV(i,j,ifile)=FacSqr/SQRT(A2dsqr(i,j))
                 ELSE
                   HnormV(i,j,ifile)=0.0_r8
                 END IF
 # else
-                HnormV(i,j,ifile)=1.0_r8/SQRT(Asqr)
+!!              HnormV(i,j,ifile)=FacSqr/SQRT(A2dsqr(i,j)-Aavg*Aavg)
+                HnormV(i,j,ifile)=FacSqr/SQRT(A2dsqr(i,j))
 # endif
               END DO
             END DO
-            CALL dabc_v2d_tile (ng, tile,                               &
-     &                          LBi, UBi, LBj, UBj,                     &
-     &                          HnormV(:,:,ifile))
+            CALL bc_v2d_tile (ng, tile,                                 &
+     &                        LBi, UBi, LBj, UBj,                       &
+     &                        HnormV(:,:,ifile))
 # ifdef DISTRIBUTE
             CALL mp_exchange2d (ng, tile, iTLM, 1,                      &
      &                          LBi, UBi, LBj, UBj,                     &
@@ -3583,22 +3318,25 @@
               DO j=Jstr,Jend
                 DO i=IstrU,Iend
                   Aavg=FacAvg*A3davg(i,j,k)
-                  Asqr=FacAvg*A3dsqr(i,j,k)
 #  ifdef MASKING
                   IF (umask(i,j).gt.0.0_r8) THEN
-                    VnormU(i,j,k,ifile)=1.0_r8/SQRT(Asqr)
+!!                  VnormU(i,j,k,ifile)=FacSqr/                         &
+!!   &                                  SQRT(A3dsqr(i,j,k)-Aavg*Aavg)
+                    VnormU(i,j,k,ifile)=FacSqr/SQRT(A3dsqr(i,j,k))
                   ELSE
                     VnormU(i,j,k,ifile)=0.0_r8
                   END IF
 #  else
-                  VnormU(i,j,k,ifile)=1.0_r8/SQRT(Asqr)
+!!                VnormU(i,j,k,ifile)=FacSqr/                           &
+!!   &                                SQRT(A3dsqr(i,j,k)-Aavg*Aavg)
+                  VnormU(i,j,k,ifile)=FacSqr/SQRT(A3dsqr(i,j,k))
 #  endif
                 END DO
               END DO
             END DO
-            CALL dabc_u3d_tile (ng, tile,                               &
-     &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
-     &                          VnormU(:,:,:,ifile))
+            CALL bc_u3d_tile (ng, tile,                                 &
+     &                        LBi, UBi, LBj, UBj, 1, N(ng),             &
+     &                        VnormU(:,:,:,ifile))
 #  ifdef DISTRIBUTE
             CALL mp_exchange3d (ng, tile, iTLM, 1,                      &
      &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
@@ -3675,22 +3413,25 @@
               DO j=JstrV,Jend
                 DO i=Istr,Iend
                   Aavg=FacAvg*A3davg(i,j,k)
-                  Asqr=FacAvg*A3dsqr(i,j,k)
 #  ifdef MASKING
                   IF (vmask(i,j).gt.0.0_r8) THEN
-                    VnormV(i,j,k,ifile)=1.0_r8/SQRT(Asqr)
+!!                  VnormV(i,j,k,ifile)=FacSqr/                         &
+!!   &                                  SQRT(A3dsqr(i,j,k)-Aavg*Aavg)
+                    VnormV(i,j,k,ifile)=FacSqr/SQRT(A3dsqr(i,j,k))
                   ELSE
                     VnormV(i,j,k,ifile)=0.0_r8
                   END IF
 #  else
-                  VnormV(i,j,k,ifile)=1.0_r8/SQRT(Asqr)
+!!                VnormV(i,j,k,ifile)=FacSqr/                           &
+!!   &                                SQRT(A3dsqr(i,j,k)-Aavg*Aavg)
+                  VnormV(i,j,k,ifile)=FacSqr/SQRT(A3dsqr(i,j,k))
 #  endif
                 END DO
               END DO
             END DO
-            CALL dabc_v3d_tile (ng, tile,                               &
-     &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
-     &                          VnormV(:,:,:,ifile))
+            CALL bc_v3d_tile (ng, tile,                                 &
+     &                        LBi, UBi, LBj, UBj, 1, N(ng),             &
+     &                        VnormV(:,:,:,ifile))
 #  ifdef DISTRIBUTE
             CALL mp_exchange3d (ng, tile, iTLM, 1,                      &
      &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
@@ -3805,15 +3546,21 @@
                 DO j=Jstr,Jend
                   DO i=Istr,Iend
                     Aavg=FacAvg*A3davg(i,j,k)
-                    Asqr=FacAvg*A3dsqr(i,j,k)
 #  ifdef MASKING
                     IF (rmask(i,j).gt.0.0_r8) THEN
-                      VnormR(i,j,k,ifile,itrc)=1.0_r8/SQRT(Asqr)
+!!                    VnormR(i,j,k,ifile,itrc)=FacSqr/                  &
+!!   &                                         SQRT(A3dsqr(i,j,k)-      &
+!!   &                                              Aavg*Aavg)
+                      VnormR(i,j,k,ifile,itrc)=FacSqr/                  &
+     &                                         SQRT(A3dsqr(i,j,k))
                     ELSE
                       VnormR(i,j,k,ifile,itrc)=0.0_r8
                     END IF
 #  else
-                    VnormR(i,j,k,ifile,itrc)=1.0_r8/SQRT(Asqr)
+!!                  VnormR(i,j,k,ifile,itrc)=FacSqr/                    &
+!!   &                                       SQRT(A3dsqr(i,j,k)-        &
+!!   &                                            Aavg*Aavg)
+                    VnormR(i,j,k,ifile,itrc)=FacSqr/SQRT(A3dsqr(i,j,k))
 #  endif
                   END DO
                 END DO
@@ -3834,9 +3581,9 @@
           DO itrc=1,NT(ng)
             is=isTvar(itrc)
             IF (Cnorm(ifile,is)) THEN
-              CALL dabc_r3d_tile (ng, tile,                             &
-     &                            LBi, UBi, LBj, UBj, 1, N(ng),         &
-     &                            VnormR(:,:,:,ifile,itrc))
+              CALL bc_r3d_tile (ng, tile,                               &
+     &                          LBi, UBi, LBj, UBj, 1, N(ng),           &
+     &                          VnormR(:,:,:,ifile,itrc))
 #  ifdef DISTRIBUTE
               CALL mp_exchange3d (ng, tile, iTLM, 1,                    &
      &                            LBi, UBi, LBj, UBj, 1, N(ng),         &
@@ -3881,7 +3628,7 @@
 !  Set randomization summation factors.
 !
         FacAvg=1.0_r8/REAL(Nrandom,r8)
-        FacSqr=SQRT(REAL(Nrandom,r8))
+        FacSqr=SQRT(REAL(Nrandom-1,r8))
 !
 !  Set time record index to write in normalization NetCDF file.
 !
@@ -3919,14 +3666,14 @@
               i=BOUNDS(ng)%edge(ibry,r2dvar)
               IF (Lconvolve(ibry)) THEN
                 DO j=JstrT,JendT
-                  HscaleB(j)=1.0_r8/SQRT(on_r(i,j))
+                  HscaleB(j)=1.0_r8/SQRT(om_r(i,j)*on_r(i,j))
                 END DO
               END IF
             ELSE IF ((ibry.eq.isouth).or.(ibry.eq.inorth)) THEN
               j=BOUNDS(ng)%edge(ibry,r2dvar)
               IF (Lconvolve(ibry)) THEN
                 DO i=IstrT,IendT
-                  HscaleB(i)=1.0_r8/SQRT(om_r(i,j))
+                  HscaleB(i)=1.0_r8/SQRT(om_r(i,j)*on_r(i,j))
                 END DO
               END IF
             END IF
@@ -3982,29 +3729,31 @@
               IF ((ibry.eq.iwest).or.(ibry.eq.ieast)) THEN
                 DO j=Jstr,Jend
                   Bavg=FacAvg*B2davg(j)
-                  Bsqr=FacAvg*B2dsqr(j)
 #  ifdef MASKING
                   IF (rmask(i,j).gt.0.0_r8) THEN
-                    HnormRobc(j,ibry)=1.0_r8/SQRT(Bsqr)
+!!                  HnormRobc(j,ibry)=FacSqr/SQRT(B2dsqr(j)-Bavg*Bavg)
+                    HnormRobc(j,ibry)=FacSqr/SQRT(B2dsqr(j))
                   ELSE
                     HnormRobc(j,ibry)=0.0_r8
                   END IF
 #  else
-                  HnormRobc(j,ibry)=1.0_r8/SQRT(Bsqr)
+!!                HnormRobc(j,ibry)=FacSqr/SQRT(B2dsqr(j)-Bavg*Bavg)
+                  HnormRobc(j,ibry)=FacSqr/SQRT(B2dsqr(j))
 #  endif
                 END DO
               ELSE IF ((ibry.eq.isouth).or.(ibry.eq.inorth)) THEN
                 DO i=Istr,Iend
                   Bavg=FacAvg*B2davg(i)
-                  Bsqr=FacAvg*B2dsqr(i)
 #  ifdef MASKING
                   IF (rmask(i,j).gt.0.0_r8) THEN
-                    HnormRobc(i,ibry)=1.0_r8/SQRT(Bsqr)
+!!                  HnormRobc(i,ibry)=FacSqr/SQRT(B2dsqr(i)-Bavg*Bavg)
+                    HnormRobc(i,ibry)=FacSqr/SQRT(B2dsqr(i))
                   ELSE
                     HnormRobc(i,ibry)=0.0_r8
                   END IF
 #  else
-                  HnormRobc(i,ibry)=1.0_r8/SQRT(Bsqr)
+!!                HnormRobc(i,ibry)=FacSqr/SQRT(B2dsqr(i)-Bavg*Bavg)
+                  HnormRobc(i,ibry)=FacSqr/SQRT(B2dsqr(i))
 #  endif
                 END DO
               END IF
@@ -4049,14 +3798,14 @@
               i=BOUNDS(ng)%edge(ibry,u2dvar)
               IF (Lconvolve(ibry)) THEN
                 DO j=JstrT,JendT
-                  HscaleB(j)=1.0_r8/SQRT(on_u(i,j))
+                  HscaleB(j)=1.0_r8/SQRT(om_u(i,j)*on_u(i,j))
                 END DO
               END IF
             ELSE IF ((ibry.eq.isouth).or.(ibry.eq.inorth)) THEN
               j=BOUNDS(ng)%edge(ibry,u2dvar)
               IF (Lconvolve(ibry)) THEN
                 DO i=IstrP,IendT
-                  HscaleB(i)=1.0_r8/SQRT(om_u(i,j))
+                  HscaleB(i)=1.0_r8/SQRT(om_u(i,j)*on_u(i,j))
                 END DO
               END IF
             END IF
@@ -4112,29 +3861,31 @@
               IF ((ibry.eq.iwest).or.(ibry.eq.ieast)) THEN
                 DO j=Jstr,Jend
                   Bavg=FacAvg*B2davg(j)
-                  Bsqr=FacAvg*B2dsqr(j)
 #  ifdef MASKING
                   IF (umask(i,j).gt.0.0_r8) THEN
-                    HnormUobc(j,ibry)=1.0_r8/SQRT(Bsqr)
+!!                  HnormUobc(j,ibry)=FacSqr/SQRT(B2dsqr(j)-Bavg*Bavg)
+                    HnormUobc(j,ibry)=FacSqr/SQRT(B2dsqr(j))
                   ELSE
                     HnormUobc(j,ibry)=0.0_r8
                   END IF
 #  else
-                  HnormUobc(j,ibry)=1.0_r8/SQRT(Bsqr)
+!!                HnormUobc(j,ibry)=FacSqr/SQRT(B2dsqr(j)-Bavg*Bavg)
+                  HnormUobc(j,ibry)=FacSqr/SQRT(B2dsqr(j))
 #  endif
                 END DO
               ELSE IF ((ibry.eq.isouth).or.(ibry.eq.inorth)) THEN
                 DO i=IstrU,Iend
                   Bavg=FacAvg*B2davg(i)
-                  Bsqr=FacAvg*B2dsqr(i)
 #  ifdef MASKING
                   IF (umask(i,j).gt.0.0_r8) THEN
-                    HnormUobc(i,ibry)=1.0_r8/SQRT(Bsqr)
+!!                  HnormUobc(i,ibry)=FacSqr/SQRT(B2dsqr(i)-Bavg*Bavg)
+                    HnormUobc(i,ibry)=FacSqr/SQRT(B2dsqr(i))
                   ELSE
                     HnormUobc(i,ibry)=0.0_r8
                   END IF
 #  else
-                  HnormUobc(i,ibry)=1.0_r8/SQRT(Bsqr)
+!!                HnormUobc(i,ibry)=FacSqr/SQRT(B2dsqr(i)-Bavg*Bavg)
+                  HnormUobc(i,ibry)=FacSqr/SQRT(B2dsqr(i))
 #  endif
                 END DO
               END IF
@@ -4179,14 +3930,14 @@
               i=BOUNDS(ng)%edge(ibry,v2dvar)
               IF (Lconvolve(ibry)) THEN
                 DO j=JstrP,JendT
-                  HscaleB(j)=1.0_r8/SQRT(on_v(i,j))
+                  HscaleB(j)=1.0_r8/SQRT(om_v(i,j)*on_v(i,j))
                 END DO
               END IF
             ELSE IF ((ibry.eq.isouth).or.(ibry.eq.inorth)) THEN
               j=BOUNDS(ng)%edge(ibry,v2dvar)
               IF (Lconvolve(ibry)) THEN
                 DO i=IstrT,IendT
-                  HscaleB(i)=1.0_r8/SQRT(om_v(i,j))
+                  HscaleB(i)=1.0_r8/SQRT(om_v(i,j)*on_v(i,j))
                 END DO
               END IF
             END IF
@@ -4242,29 +3993,31 @@
               IF ((ibry.eq.iwest).or.(ibry.eq.ieast)) THEN
                 DO j=JstrV,Jend
                   Bavg=FacAvg*B2davg(j)
-                  Bsqr=FacAvg*B2dsqr(j)
 #  ifdef MASKING
                   IF (vmask(i,j).gt.0.0_r8) THEN
-                    HnormVobc(j,ibry)=1.0_r8/SQRT(Bsqr)
+!!                  HnormVobc(j,ibry)=FacSqr/SQRT(B2dsqr(j)-Bavg*Bavg)
+                    HnormVobc(j,ibry)=FacSqr/SQRT(B2dsqr(j))
                   ELSE
                     HnormVobc(j,ibry)=0.0_r8
                   END IF
 #  else
-                  HnormVobc(j,ibry)=1.0_r8/SQRT(Bsqr)
+!!                HnormVobc(j,ibry)=FacSqr/SQRT(B2dsqr(j)-Bavg*Bavg)
+                  HnormVobc(j,ibry)=FacSqr/SQRT(B2dsqr(j))
 #  endif
                 END DO
               ELSE IF ((ibry.eq.isouth).or.(ibry.eq.inorth)) THEN
                 DO i=Istr,Iend
                   Bavg=FacAvg*B2davg(i)
-                  Bsqr=FacAvg*B2dsqr(i)
 #  ifdef MASKING
                   IF (vmask(i,j).gt.0.0_r8) THEN
-                    HnormVobc(i,ibry)=1.0_r8/SQRT(Bsqr)
+!!                  HnormVobc(i,ibry)=FacSqr/SQRT(B2dsqr(i)-Bavg*Bavg)
+                    HnormVobc(i,ibry)=FacSqr/SQRT(B2dsqr(i))
                   ELSE
                     HnormVobc(i,ibry)=0.0_r8
                   END IF
 #  else
-                  HnormVobc(i,ibry)=1.0_r8/SQRT(Bsqr)
+!!                HnormVobc(i,ibry)=FacSqr/SQRT(B2dsqr(i)-Bavg*Bavg)
+                  HnormVobc(i,ibry)=FacSqr/SQRT(B2dsqr(i))
 #  endif
                 END DO
               END IF
@@ -4311,7 +4064,7 @@
               i=BOUNDS(ng)%edge(ibry,u2dvar)
               IF (Lconvolve(ibry)) THEN
                 DO j=JstrT,JendT
-                  val=on_u(i,j)*0.5_r8
+                  val=om_u(i,j)*on_u(i,j)*0.5_r8
                   DO k=1,N(ng)
                     VscaleB(j,k)=1.0_r8/                                &
      &                           SQRT(val*(Hz(i-1,j,k)+Hz(i,j,k)))
@@ -4322,7 +4075,7 @@
               j=BOUNDS(ng)%edge(ibry,u2dvar)
               IF (Lconvolve(ibry)) THEN
                 DO i=IstrP,IendT
-                  val=om_u(i,j)*0.5_r8
+                  val=om_u(i,j)*on_u(i,j)*0.5_r8
                   DO k=1,N(ng)
                     VscaleB(i,k)=1.0_r8/                                &
      &                           SQRT(val*(Hz(i-1,j,k)+Hz(i,j,k)))
@@ -4394,15 +4147,18 @@
                 DO k=1,N(ng)
                   DO j=Jstr,Jend
                     Bavg=FacAvg*B3davg(j,k)
-                    Bsqr=FacAvg*B3dsqr(j,k)
 #  ifdef MASKING
                     IF (umask(i,j).gt.0.0_r8) THEN
-                      VnormUobc(j,k,ibry)=1.0_r8/SQRT(Bsqr)
+!!                    VnormUobc(j,k,ibry)=FacSqr/                       &
+!!   &                                    SQRT(B3dsqr(j,k)-Bavg*Bavg)
+                      VnormUobc(j,k,ibry)=FacSqr/SQRT(B3dsqr(j,k))
                     ELSE
                       VnormUobc(j,k,ibry)=0.0_r8
                     END IF
 #  else
-                    VnormUobc(j,k,ibry)=1.0_r8/SQRT(Bsqr)
+!!                  VnormUobc(j,k,ibry)=FacSqr/                         &
+!!   &                                  SQRT(B3dsqr(j,k)-Bavg*Bavg)
+                    VnormUobc(j,k,ibry)=FacSqr/SQRT(B3dsqr(j,k))
 #  endif
                   END DO
                 END DO
@@ -4410,15 +4166,18 @@
                 DO k=1,N(ng)
                   DO i=IstrU,Iend
                     Bavg=FacAvg*B3davg(i,k)
-                    Bsqr=FacAvg*B3dsqr(i,k)
 #  ifdef MASKING
                     IF (umask(i,j).gt.0.0_r8) THEN
-                      VnormUobc(i,k,ibry)=1.0_r8/SQRT(Bsqr)
+!!                    VnormUobc(i,k,ibry)=FacSqr/                       &
+!!   &                                    SQRT(B3dsqr(i,k)-Bavg*Bavg)
+                      VnormUobc(i,k,ibry)=FacSqr/SQRT(B3dsqr(i,k))
                     ELSE
                       VnormUobc(i,k,ibry)=0.0_r8
                     END IF
 #  else
-                    VnormUobc(i,k,ibry)=1.0_r8/SQRT(Bsqr)
+!!                  VnormUobc(i,k,ibry)=FacSqr/                         &
+!!   &                                  SQRT(B3dsqr(i,k)-Bavg*Bavg)
+                    VnormUobc(i,k,ibry)=FacSqr/SQRT(B3dsqr(i,k))
 #  endif
                   END DO
                 END DO
@@ -4471,7 +4230,7 @@
               i=BOUNDS(ng)%edge(ibry,v2dvar)
               IF (Lconvolve(ibry)) THEN
                 DO j=JstrP,JendT
-                  val=on_v(i,j)*0.5_r8
+                  val=om_v(i,j)*on_v(i,j)*0.5_r8
                   DO k=1,N(ng)
                     VscaleB(j,k)=1.0_r8/                                &
      &                           SQRT(val*(Hz(i,j-1,k)+Hz(i,j,k)))
@@ -4482,7 +4241,7 @@
               j=BOUNDS(ng)%edge(ibry,v2dvar)
               IF (Lconvolve(ibry)) THEN
                 DO i=IstrT,IendT
-                  val=om_v(i,j)*0.5_r8
+                  val=om_v(i,j)*on_v(i,j)*0.5_r8
                   DO k=1,N(ng)
                     VscaleB(i,k)=1.0_r8/                                &
      &                           SQRT(val*(Hz(i,j-1,k)+Hz(i,j,k)))
@@ -4554,15 +4313,18 @@
                 DO k=1,N(ng)
                   DO j=JstrV,Jend
                     Bavg=FacAvg*B3davg(j,k)
-                    Bsqr=FacAvg*B3dsqr(j,k)
 #  ifdef MASKING
                     IF (vmask(i,j).gt.0.0_r8) THEN
-                      VnormVobc(j,k,ibry)=1.0_r8/SQRT(Bsqr)
+!!                    VnormVobc(j,k,ibry)=FacSqr/                       &
+!!   &                                    SQRT(B3dsqr(j,k)-Bavg*Bavg)
+                      VnormVobc(j,k,ibry)=FacSqr/SQRT(B3dsqr(j,k))
                     ELSE
                       VnormVobc(j,k,ibry)=0.0_r8
                     END IF
 #  else
-                    VnormVobc(j,k,ibry)=1.0_r8/SQRT(Bsqr)
+!!                  VnormVobc(j,k,ibry)=FacSqr/                         &
+!!   &                                  SQRT(B3dsqr(j,k)-Bavg*Bavg)
+                    VnormVobc(j,k,ibry)=FacSqr/SQRT(B3dsqr(j,k))
 #  endif
                   END DO
                 END DO
@@ -4570,15 +4332,18 @@
                 DO k=1,N(ng)
                   DO i=Istr,Iend
                     Bavg=FacAvg*B3davg(i,k)
-                    Bsqr=FacAvg*B3dsqr(i,k)
 #  ifdef MASKING
                     IF (vmask(i,j).gt.0.0_r8) THEN
-                      VnormVobc(i,k,ibry)=1.0_r8/SQRT(Bsqr)
+!!                    VnormVobc(i,k,ibry)=FacSqr/                       &
+!!   &                                    SQRT(B3dsqr(i,k)-Bavg*Bavg)
+                      VnormVobc(i,k,ibry)=FacSqr/SQRT(B3dsqr(i,k))
                     ELSE
                       VnormVobc(i,k,ibry)=0.0_r8
                     END IF
 #  else
-                    VnormVobc(i,k,ibry)=1.0_r8/SQRT(Bsqr)
+!!                  VnormVobc(i,k,ibry)=FacSqr/                         &
+!!   &                                  SQRT(B3dsqr(i,k)-Bavg*Bavg)
+                    VnormVobc(i,k,ibry)=FacSqr/SQRT(B3dsqr(i,k))
 #  endif
                   END DO
                 END DO
@@ -4641,7 +4406,7 @@
                 i=BOUNDS(ng)%edge(ibry,r2dvar)
                 IF (Lconvolve(ibry)) THEN
                   DO j=JstrT,JendT
-                    val=on_r(i,j)
+                    val=om_r(i,j)*on_r(i,j)
                     DO k=1,N(ng)
                       VscaleB(j,k)=1.0_r8/SQRT(val*Hz(i,j,k))
                     END DO
@@ -4651,7 +4416,7 @@
                 j=BOUNDS(ng)%edge(ibry,r2dvar)
                 IF (Lconvolve(ibry)) THEN
                   DO i=IstrT,IendT
-                    val=om_r(i,j)
+                    val=om_r(i,j)*on_r(i,j)
                     DO k=1,N(ng)
                       VscaleB(i,k)=1.0_r8/SQRT(val*Hz(i,j,k))
                     END DO
@@ -4723,15 +4488,20 @@
                   DO k=1,N(ng)
                     DO j=Jstr,Jend
                       Bavg=FacAvg*B3davg(j,k)
-                      Bsqr=FacAvg*B3dsqr(j,k)
 #  ifdef MASKING
                       IF (rmask(i,j).gt.0.0_r8) THEN
-                        VnormRobc(j,k,ibry,itrc)=1.0_r8/SQRT(Bsqr)
+!!                      VnormRobc(j,k,ibry,itrc)=FacSqr/                &
+!!   &                                           SQRT(B3dsqr(j,k)-      &
+!!   &                                                Bavg*Bavg)
+                        VnormRobc(j,k,ibry,itrc)=FacSqr/SQRT(B3dsqr(j,k))
                       ELSE
                         VnormRobc(j,k,ibry,itrc)=0.0_r8
                       END IF
 #  else
-                      VnormRobc(j,k,ibry,itrc)=1.0_r8/SQRT(Bsqr)
+!!                    VnormRobc(j,k,ibry,itrc)=FacSqr/                  &
+!!   &                                         SQRT(B3dsqr(j,k)-        &
+!!   &                                              Bavg*Bavg)
+                      VnormRobc(j,k,ibry,itrc)=FacSqr/SQRT(B3dsqr(j,k))
 #  endif
                     END DO
                   END DO
@@ -4739,15 +4509,20 @@
                   DO k=1,N(ng)
                     DO i=Istr,Iend
                       Bavg=FacAvg*B3davg(i,k)
-                      Bsqr=FacAvg*B3dsqr(i,k)
 #  ifdef MASKING
                       IF (rmask(i,j).gt.0.0_r8) THEN
-                        VnormRobc(i,k,ibry,itrc)=1.0_r8/SQRT(Bsqr)
+!!                      VnormRobc(i,k,ibry,itrc)=FacSqr/                &
+!!   &                                           SQRT(B3dsqr(i,k)-      &
+!!   &                                                Bavg*Bavg)
+                        VnormRobc(i,k,ibry,itrc)=FacSqr/SQRT(B3dsqr(i,k))
                       ELSE
                         VnormRobc(i,k,ibry,itrc)=0.0_r8
                       END IF
 #  else
-                      VnormRobc(i,k,ibry,itrc)=1.0_r8/SQRT(Bsqr)
+!!                    VnormRobc(i,k,ibry,itrc)=FacSqr/                  &
+!!   &                                         SQRT(B3dsqr(i,k)-        &
+!!   &                                              Bavg*Bavg)
+                      VnormRobc(i,k,ibry,itrc)=FacSqr/SQRT(B3dsqr(i,k))
 #  endif
                     END DO
                   END DO
@@ -4806,7 +4581,7 @@
 !  Set randomization summation factors.
 !
         FacAvg=1.0_r8/REAL(Nrandom,r8)
-        FacSqr=SQRT(REAL(Nrandom,r8))
+        FacSqr=SQRT(REAL(Nrandom-1,r8))
 !
 !  Set time record index to write in normalization NetCDF file.
 !
@@ -4873,21 +4648,22 @@
           DO j=Jstr,Jend
             DO i=IstrU,Iend
               Aavg=FacAvg*A2davg(i,j)
-              Asqr=FacAvg*A2dsqr(i,j)
 #   ifdef MASKING
               IF (umask(i,j).gt.0.0_r8) THEN
-                HnormSUS(i,j)=1.0_r8/SQRT(Asqr)
+!!              HnormSUS(i,j)=FacSqr/SQRT(A2dsqr(i,j)-Aavg*Aavg)
+                HnormSUS(i,j)=FacSqr/SQRT(A2dsqr(i,j))
               ELSE
                 HnormSUS(i,j)=0.0_r8
               END IF
 #   else
-              HnormSUS(i,j)=1.0_r8/SQRT(Asqr)
+!!            HnormSUS(i,j)=FacSqr/SQRT(A2dsqr(i,j)-Aavg*Aavg)
+              HnormSUS(i,j)=FacSqr/SQRT(A2dsqr(i,j))
 #   endif
             END DO
           END DO
-          CALL dabc_u2d_tile (ng, tile,                                 &
-     &                        LBi, UBi, LBj, UBj,                       &
-     &                        HnormSUS)
+          CALL bc_u2d_tile (ng, tile,                                   &
+     &                      LBi, UBi, LBj, UBj,                         &
+     &                      HnormSUS)
 #   ifdef DISTRIBUTE
           CALL mp_exchange2d (ng, tile, iTLM, 1,                        &
      &                        LBi, UBi, LBj, UBj,                       &
@@ -4953,21 +4729,22 @@
           DO j=JstrV,Jend
             DO i=Istr,Iend
               Aavg=FacAvg*A2davg(i,j)
-              Asqr=FacAvg*A2dsqr(i,j)
 #   ifdef MASKING
               IF (vmask(i,j).gt.0.0_r8) THEN
-                HnormSVS(i,j)=1.0_r8/SQRT(Asqr)
+!!              HnormSVS(i,j)=FacSqr/SQRT(A2dsqr(i,j)-Aavg*Aavg)
+                HnormSVS(i,j)=FacSqr/SQRT(A2dsqr(i,j))
               ELSE
                 HnormSVS(i,j)=0.0_r8
               END IF
 #   else
-              HnormSVS(i,j)=1.0_r8/SQRT(Asqr)
+!!            HnormSVS(i,j)=FacSqr/SQRT(A2dsqr(i,j)-Aavg*Aavg)
+              HnormSVS(i,j)=FacSqr/SQRT(A2dsqr(i,j))
 #   endif
             END DO
           END DO
-          CALL dabc_v2d_tile (ng, tile,                                 &
-     &                        LBi, UBi, LBj, UBj,                       &
-     &                        HnormSVS)
+          CALL bc_v2d_tile (ng, tile,                                   &
+     &                      LBi, UBi, LBj, UBj,                         &
+     &                      HnormSVS)
 #   ifdef DISTRIBUTE
           CALL mp_exchange2d (ng, tile, iTLM, 1,                        &
      &                        LBi, UBi, LBj, UBj,                       &
@@ -5072,15 +4849,17 @@
               DO j=Jstr,Jend
                 DO i=Istr,Iend
                   Aavg=FacAvg*A2davg(i,j)
-                  Asqr=FacAvg*A2dsqr(i,j)
 #   ifdef MASKING
                   IF (rmask(i,j).gt.0.0_r8) THEN
-                    HnormSTF(i,j,itrc)=1.0_r8/SQRT(Asqr)
+!!                  HnormSTF(i,j,itrc)=FacSqr/                          &
+!!   &                                 SQRT(A2dsqr(i,j)-Aavg*Aavg)
+                    HnormSTF(i,j,itrc)=FacSqr/SQRT(A2dsqr(i,j))
                   ELSE
                     HnormSTF(i,j,itrc)=0.0_r8
                   END IF
 #   else
-                  HnormSTF(i,j,itrc)=1.0_r8/SQRT(Asqr)
+!!                HnormSTF(i,j,itrc)=FacSqr/SQRT(A2dsqr(i,j)-Aavg*Aavg)
+                  HnormSTF(i,j,itrc)=FacSqr/SQRT(A2dsqr(i,j))
 #   endif
                 END DO
               END DO
@@ -5102,9 +4881,9 @@
           IF (Lstflux(itrc,ng)) THEN
             is=isTsur(itrc)
             IF (Cnorm(rec,is)) THEN
-              CALL dabc_r2d_tile (ng, tile,                             &
-     &                            LBi, UBi, LBj, UBj,                   &
-     &                            HnormSTF(:,:,itrc))
+              CALL bc_r2d_tile (ng, tile,                               &
+     &                          LBi, UBi, LBj, UBj,                     &
+     &                          HnormSTF(:,:,itrc))
 #   ifdef DISTRIBUTE
               CALL mp_exchange2d (ng, tile, iTLM, 1,                    &
      &                            LBi, UBi, LBj, UBj,                   &

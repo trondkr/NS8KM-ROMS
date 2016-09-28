@@ -189,7 +189,7 @@
 
 #define LTIDES
 #ifdef LTIDES
-# define FILTERED
+# undef FILTERED
 # define SSH_TIDES
 # define UV_TIDES
 # define ADD_FSOBC

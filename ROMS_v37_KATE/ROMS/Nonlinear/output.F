@@ -68,14 +68,6 @@
 !  If appropriate, process nonlinear history NetCDF file.
 !-----------------------------------------------------------------------
 !
-!  Set tile for local array manipulations in output routines.
-!
-#ifdef DISTRIBUTE
-      tile=MyRank
-#else
-      tile=-1
-#endif
-!
 !  Turn off checking for analytical header files.
 !
       IF (Lanafile) THEN
@@ -157,13 +149,13 @@
           IF ((iic(ng).gt.ntstart(ng)).and.                             &
      &        (MOD(iic(ng)-1,nHIS(ng)).eq.0)) THEN
             IF (nrrec(ng).eq.0.or.iic(ng).ne.ntstart(ng)) THEN
-              CALL wrt_his (ng, tile)
+              CALL wrt_his (ng)
             END IF
             IF (exit_flag.ne.NoError) RETURN
           END IF
         ELSE
           IF (MOD(iic(ng)-1,nHIS(ng)).eq.0) THEN
-            CALL wrt_his (ng, tile)
+            CALL wrt_his (ng)
             IF (exit_flag.ne.NoError) RETURN
           END IF
         END IF
@@ -627,9 +619,14 @@
       IF (((time(ng)-0.5_r8*dt(ng)).le.ObsTime(ng)).and.                &
      &    (ObsTime(ng).lt.(time(ng)+0.5_r8*dt(ng)))) THEN
         ProcessObs=.TRUE.
+#   ifdef DISTRIBUTE
+        tile=MyRank
+#   else
+        tile=-1
+#   endif
         CALL obs_read (ng, iNLM, .FALSE.)
         CALL obs_write (ng, tile, iNLM)
-#   if !(defined VERIFICATION || defined W4DVAR)
+#   ifndef W4DVAR
         CALL obs_cost (ng, iNLM)
 #   endif
       ELSE

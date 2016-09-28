@@ -562,14 +562,6 @@
 !
       integer, allocatable :: Nbico(:)
 #endif
-
-#if defined TIME_CONV && defined WEAK_CONSTRAINT
-!
-!  Number of full state records needed for time convolutions. It is
-!  assign to (ntimes(ng)/nADJ(ng))+1 in "read_phypar.F"
-!
-      integer, allocatable :: NrecTC(:)
-#endif
 !
 !-----------------------------------------------------------------------
 !  Model state parameters.
@@ -679,10 +671,6 @@
 #endif
 
       allocate ( NT(Ngrids) )
-
-#if defined TIME_CONV && defined WEAK_CONSTRAINT
-      allocate ( NrecTC(Ngrids) )
-#endif
 
       allocate ( NTCLM(Ngrids) )
 

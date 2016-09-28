@@ -1,6 +1,6 @@
 #include "cppdefs.h"
       MODULE sum_grad_mod
-#if defined IS4DVAR || defined RPCG
+#if defined IS4DVAR
 !
 !svn $Id$
 !================================================== Hernan G. Arango ===

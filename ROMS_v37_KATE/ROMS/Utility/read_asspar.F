@@ -15,8 +15,7 @@
 !
       USE mod_param
       USE mod_parallel
-# if defined FOUR_DVAR  || defined VERIFICATION || \
-    (defined HESSIAN_SV && defined BNORM)
+# if defined FOUR_DVAR || defined VERIFICATION
       USE mod_fourdvar
 # endif
       USE mod_iounits
@@ -35,7 +34,7 @@
       logical :: find_file
       logical :: Lvalue(1)
 
-      integer :: Mval, Npts, Nval
+      integer :: Npts, Nval
       integer :: i, ib, igrid, itrc, k, ng, status
       integer :: Cdim, Clen, Rdim
       integer :: Ivalue(1)
@@ -43,8 +42,7 @@
       integer :: decode_line, load_i, load_l, load_r, load_s1d
 
       integer :: Nfiles(Ngrids)
-# if defined FOUR_DVAR  || defined VERIFICATION || \
-    (defined HESSIAN_SV && defined BNORM)
+# if defined FOUR_DVAR || defined VERIFICATION
       logical, dimension(MT) :: Ltracer
 #  if defined ADJUST_STFLUX && defined SOLVE3D
       logical, dimension(MT,Ngrids) :: Ltsur
@@ -84,8 +82,7 @@
       Clen=LEN(Cval(1))
       Rdim=SIZE(Rval,1)
 
-# if defined FOUR_DVAR  || defined VERIFICATION || \
-    (defined HESSIAN_SV && defined BNORM)
+# if defined FOUR_DVAR || defined VERIFICATION
 !
 !-----------------------------------------------------------------------
 !  Read in 4DVAR assimilation parameters. Then, load input data into
@@ -168,21 +165,21 @@
               Npts=load_l(Nval, Cval, 4*Ngrids, LwrtNRM)
             CASE ('CnormM(isFsur)')
               IF (isFsur.eq.0) THEN
-                IF (Master) WRITE (out,210) 'isFsur'
+                IF (Master) WRITE (out,190) 'isFsur'
                 exit_flag=5
                 RETURN
               END IF
               Npts=load_l(Nval, Cval, 1, Cnorm(2,isFsur))
             CASE ('CnormM(isUbar)')
               IF (isUbar.eq.0) THEN
-                IF (Master) WRITE (out,210) 'isUbar'
+                IF (Master) WRITE (out,190) 'isUbar'
                 exit_flag=5
                 RETURN
               END IF
               Npts=load_l(Nval, Cval, 1, Cnorm(2,isUbar))
             CASE ('CnormM(isVbar)')
               IF (isVbar.eq.0) THEN
-                IF (Master) WRITE (out,210) 'isVbar'
+                IF (Master) WRITE (out,190) 'isVbar'
                 exit_flag=5
                 RETURN
               END IF
@@ -190,21 +187,21 @@
 #  ifdef SOLVE3D
             CASE ('CnormM(isUvel)')
               IF (isUvel.eq.0) THEN
-                IF (Master) WRITE (out,210) 'isUvel'
+                IF (Master) WRITE (out,190) 'isUvel'
                 exit_flag=5
                 RETURN
               END IF
               Npts=load_l(Nval, Cval, 1, Cnorm(2,isUvel))
             CASE ('CnormM(isVvel)')
               IF (isVvel.eq.0) THEN
-                IF (Master) WRITE (out,210) 'isVvel'
+                IF (Master) WRITE (out,190) 'isVvel'
                 exit_flag=5
                 RETURN
               END IF
               Npts=load_l(Nval, Cval, 1, Cnorm(2,isVvel))
             CASE ('CnormM(isTvar)')
               IF (MAXVAL(isTvar).eq.0) THEN
-                IF (Master) WRITE (out,210) 'isTvar'
+                IF (Master) WRITE (out,190) 'isTvar'
                 exit_flag=5
                 RETURN
               END IF
@@ -257,14 +254,14 @@
 #  ifdef ADJUST_WSTRESS
             CASE ('CnormF(isUstr)')
               IF (isUstr.eq.0) THEN
-                IF (Master) WRITE (out,210) 'isUstr'
+                IF (Master) WRITE (out,190) 'isUstr'
                 exit_flag=5
                 RETURN
               END IF
               Npts=load_l(Nval, Cval, 1, Cnorm(1,isUstr))
             CASE ('CnormF(isVstr)')
               IF (isVstr.eq.0) THEN
-                IF (Master) WRITE (out,210) 'isVstr'
+                IF (Master) WRITE (out,190) 'isVstr'
                 exit_flag=5
                 RETURN
               END IF
@@ -273,7 +270,7 @@
 #  if defined ADJUST_STFLUX && defined SOLVE3D
             CASE ('CnormF(isTsur)')
               IF (MAXVAL(isTsur).eq.0) THEN
-                IF (Master) WRITE (out,210) 'isTsur'
+                IF (Master) WRITE (out,190) 'isTsur'
                 exit_flag=5
                 RETURN
               END IF
@@ -331,25 +328,6 @@
               DO ng=1,Ngrids
                 DO itrc=1,NT(ng)
                   Vdecay(2,isTvar(itrc),ng)=Rtracer(itrc,ng)
-                END DO
-              END DO
-#  endif
-            CASE ('TdecayM(isFsur)')
-              Npts=load_r(Nval, Rval, Ngrids, Tdecay(isFsur,:))
-            CASE ('TdecayM(isUbar)')
-              Npts=load_r(Nval, Rval, Ngrids, Tdecay(isUbar,:))
-            CASE ('TdecayM(isVbar)')
-              Npts=load_r(Nval, Rval, Ngrids, Tdecay(isVbar,:))
-#  ifdef SOLVE3D
-            CASE ('TdecayM(isUvel)')
-              Npts=load_r(Nval, Rval, Ngrids, Tdecay(isUvel,:))
-            CASE ('TdecayM(isVvel)')
-              Npts=load_r(Nval, Rval, Ngrids, Tdecay(isVvel,:))
-            CASE ('TdecayM(isTvar)')
-              Npts=load_r(Nval, Rval, MT*Ngrids, Rtracer)
-              DO ng=1,Ngrids
-                DO itrc=1,NT(ng)
-                  Tdecay(isTvar(itrc),ng)=Rtracer(itrc,ng)
                 END DO
               END DO
 #  endif
@@ -433,41 +411,6 @@
                   Hdecay(1,isTsur(itrc),ng)=Rtracer(itrc,ng)
                 END DO
               END DO
-#  endif
-#  ifdef BGQC
-            CASE ('bgqc_type')
-              Npts=load_i(Nval, Rval, Ngrids, bgqc_type)
-            CASE ('S_bgqc(isFsur)')
-              Npts=load_r(Nval, Rval, Ngrids, S_bgqc(isFsur,:))
-            CASE ('S_bgqc(isUbar)')
-              Npts=load_r(Nval, Rval, Ngrids, S_bgqc(isUbar,:))
-            CASE ('S_bgqc(isVbar)')
-              Npts=load_r(Nval, Rval, Ngrids, S_bgqc(isVbar,:))
-            CASE ('S_bgqc(isUvel)')
-              Npts=load_r(Nval, Rval, Ngrids, S_bgqc(isUvel,:))
-            CASE ('S_bgqc(isVvel)')
-              Npts=load_r(Nval, Rval, Ngrids, S_bgqc(isVvel,:))
-            CASE ('S_bgqc(isTvar)')
-              Npts=load_r(Nval, Rval, MT*Ngrids, Rtracer)
-              DO ng=1,Ngrids
-                DO itrc=1,NT(ng)
-                  S_bgqc(isTvar(itrc),ng)=Rtracer(itrc,ng)
-                END DO
-              END DO
-            CASE ('Nprovenance')
-              Npts=load_i(Nval, Rval, Ngrids, Nprovenance)
-              IF (.not.allocated(Iprovenance)) THEN
-                allocate ( Iprovenance(MAXVAL(Nprovenance),Ngrids))
-              END IF
-              IF (.not.allocated(P_bgqc)) THEN
-                allocate ( P_bgqc(MAXVAL(Nprovenance),Ngrids))
-              END IF
-            CASE ('Iprovenance')
-              Mval=MAXVAL(Nprovenance)*Ngrids
-              Npts=load_i(Nval, Rval, Mval, Iprovenance)
-            CASE ('P_bgqc')
-              Mval=MAXVAL(Nprovenance)*Ngrids
-              Npts=load_r(Nval, Rval, Mval, P_bgqc)
 #  endif
 #  if defined ADJUST_STFLUX && defined SOLVE3D
             CASE ('Lstflux')
@@ -571,10 +514,6 @@
               label='LCZ - Lanczos vectors'
               Npts=load_s1d(Nval, Cval, Cdim, line, label, igrid,       &
      &                      Nfiles, LCZ)
-            CASE ('LZEname')
-              label='LZE - Time-evolved Lanczos vectors'
-              Npts=load_s1d(Nval, Cval, Cdim, line, label, igrid,       &
-     &                      Nfiles, LZE)
             CASE ('MODname')
               label='DAV - 4D-Var data assimilation variables'
               Npts=load_s1d(Nval, Cval, Cdim, line, label, igrid,       &
@@ -924,28 +863,6 @@
 #     endif
           END IF
 #    endif
-#    if defined WEAK_CONSTRAINT && defined TIME_CONV
-          WRITE (out,80) NrecTC(ng), 'NrecTC',                          &
-     &            'Number of state records for time convolution.'
-          WRITE (out,120) Tdecay(isFsur,ng), 'TdecayM(isFsur)',         &
-     &          'Model decorrelation T-scale (day), free-surface.'
-          WRITE (out,120) Tdecay(isUbar,ng), 'TdecayM(isUbar)',         &
-     &          'Model decorrelation T-scale (day), 2D U-momentum.'
-          WRITE (out,120) Tdecay(isVbar,ng), 'TdecayM(isVbar)',         &
-     &          'Model decorrelation T-scale (day), 2D V-momentum.'
-#     ifdef SOLVE3D
-          WRITE (out,120) Tdecay(isUvel,ng), 'TdecayM(isUvel)',         &
-     &          'Model decorrelation T-scale (day), 3D U-momentum.'
-          WRITE (out,120) Tdecay(isVvel,ng), 'TdecayM(isVvel)',         &
-     &          'Model decorrelation T-scale (day), 3D V-momentum.'
-          DO itrc=1,NT(ng)
-            WRITE (out,130) Tdecay(isTvar(itrc),ng),                    &
-     &          'TdecayM(idTvar)',                                      &
-     &          'Model decorrelation T-scale (day), ',                  &
-     &          TRIM(Vname(1,idTvar(itrc)))
-            END DO
-#     endif
-#    endif
           WRITE (out,120) Hdecay(1,isFsur,ng), 'HdecayI(isFsur)',       &
      &            'Initial decorrelation H-scale (m), free-surface.'
           WRITE (out,120) Hdecay(1,isUbar,ng), 'HdecayI(isUbar)',       &
@@ -1047,44 +964,6 @@
      &            TRIM(Vname(1,idTvar(itrc)))
           END DO
 #    endif
-#    ifdef BGQC
-          IF (bgqc_type(ng).eq.1) THEN
-            WRITE (out,80) bgqc_type(ng), 'bgqc_type',                  &
-     &            'Quality control in terms of state variable index'
-          ELSE IF (bgqc_type(ng).eq.2) THEN
-            WRITE (out,80) bgqc_type(ng), 'bgqc_type',                  &
-     &            'Quality control in terms of observation provenance'
-          END IF
-          IF (bgqc_type(ng).eq.1) THEN
-            WRITE (out,100) S_bgqc(isFsur,ng), 'S_bgqc(isFsur)',        &
-     &            'Quality control reject threshold, free-surface.'
-#     ifndef SOLVE3D
-            WRITE (out,100) S_bgqc(isUbar,ng), 'S_bgqc(isUbar)',        &
-     &            'Quality control reject threshold, 2D U-momentum.'
-            WRITE (out,100) S_bgqc(isVbar,ng), 'S_bgqc(isVbar)',        &
-     &            'Quality control reject threshold, 2D V-momentum.'
-#     else
-            WRITE (out,100) S_bgqc(isUvel,ng), 'S_bgqc(isUvel)',        &
-     &            'Quality control reject threshold, 3D U-momentum.'
-            WRITE (out,100) S_bgqc(isVbar,ng), 'S_bgqc(isVvel)',        &
-     &            'Quality control reject threshold, 3D V-momentum.'
-            DO itrc=1,NT(ng)
-              WRITE (out,190) S_bgqc(isTvar(itrc),ng),                  &
-     &            'S_bgqc(idTvar)',                                     &
-     &            'Quality control reject threshold, ',                 &
-     &            TRIM(Vname(1,idTvar(itrc)))
-            END DO
-#     endif
-          ELSE IF (bgqc_type(ng).eq.2) THEN
-            WRITE (out,80) Nprovenance(ng), 'Nprovenance',              &
-     &            'Number of provenances to Quality control.'
-            DO i=1,Nprovenance(ng)
-              WRITE (out,200) P_bgqc(i,ng), 'P_bgqc', i,                &
-     &            'Quality control reject threshold for provenance',    &
-     &            Iprovenance(i,ng)
-            END DO
-          END IF
-#    endif
 #    if defined ADJUST_STFLUX && defined SOLVE3D
           DO itrc=1,NT(ng)
             WRITE (out,110) Lstflux(itrc,ng), 'Lstflux(itrc)',          &
@@ -1126,7 +1005,7 @@
           WRITE (out,160) ' Assimilation Parameters File:  ',           &
      &                    TRIM(aparnam)
 #  endif
-#  if defined FOUR_DVAR || (defined HESSIAN_SV && defined BNORM)
+#  ifdef FOUR_DVAR
 #   if defined IS4DVAR          || defined OBS_SENSITIBITY || \
        defined OPT_OBSERVATIONS || defined WEAK_CONSTRAINT
 #    if defined SENSITIVITY_4DVAR || \
@@ -1233,10 +1112,6 @@
           WRITE (out,160) '    Input/Output Hessian File:  ',           &
      &                    TRIM(HSS(ng)%name)
 #  endif
-#  ifdef EVOLVED_LCZ
-          WRITE (out,160) '  Output evolved Lanczos File:  ',           &
-     &                    TRIM(LZE(ng)%name)
-#  endif
 #  ifdef VERIFICATION
           WRITE (out,160) '     Output verification File:  ',           &
      &                    TRIM(DAV(ng)%name)
@@ -1250,26 +1125,13 @@
      &                    TRIM(ERR(ng)%name)
 #  endif
           GO TO 40
-  30      WRITE (out,220) TRIM(fname)
+  30      WRITE (out,200) TRIM(fname)
           exit_flag=4
           RETURN
   40      CONTINUE
         END DO
       END IF
 
-#  if defined WEAK_CONSTRAINT && defined TIME_CONV
-!
-!-----------------------------------------------------------------------
-!  Convert time decorrelation scales to seconds.
-!-----------------------------------------------------------------------
-!
-      DO ng=1,Ngrids
-        DO i=1,MstateVar
-          Tdecay(i,ng)=Tdecay(i,ng)*86400.0_r8
-        END DO
-      END DO
-#  endif
-!
   50  FORMAT (/,' READ_AssPar - Error while processing line: ',/,a)
   55  FORMAT (/,' READ_AssPar - ',a,i4,2x,i4,/,15x,a)
   60  FORMAT (/,/,' Assimilation Parameters, Grid: ',i2.2,              &
@@ -1285,10 +1147,8 @@
  160  FORMAT (2x,a,a)
  170  FORMAT (3x,4(1x,l1),2x,a,t30,a)
  180  FORMAT (3x,4(1x,l1),2x,a,t30,a,i2.2,':',1x,a)
- 190  FORMAT (1p,e11.4,2x,a,t30,a,a,'.')
- 200  FORMAT (1p,e11.4,2x,a,'(',i2.2,')',t30,a,':',1x,i6)
- 210  FORMAT (/,' READ_ASSPAR - variable info not yet loaded, ', a)
- 220  FORMAT (/,' READ_ASSPAR - could not find input file:  ',a)
+ 190  FORMAT (/,' READ_ASSPAR - variable info not yet loaded, ', a)
+ 200  FORMAT (/,' READ_ASSPAR - could not find input file:  ',a)
 # endif
 
       RETURN

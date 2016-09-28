@@ -77,6 +77,14 @@
 !  adjoint-based algorithms.
 !-----------------------------------------------------------------------
 !
+      string=uppercase('atm_press')
+      ifound=INDEX(TRIM(Coptions), TRIM(string))
+      IF (ifound.ne.0) THEN
+        ic=ic+1
+        IF (Master) WRITE(stdout,20) TRIM(string),                      &
+     &                               'not tested, FATAL ERROR'
+      END IF
+
       string=uppercase('bedload_mpm')
       ifound=INDEX(TRIM(Coptions), TRIM(string))
       IF (ifound.ne.0) THEN
@@ -99,6 +107,13 @@
         ic=ic+1
         IF (Master) WRITE(stdout,20) TRIM(string),                      &
      &                               'not coded, FATAL ERROR'
+      END IF
+
+      string=uppercase('bio_umaine')
+      ifound=INDEX(TRIM(Coptions), TRIM(string))
+      IF (ifound.ne.0) THEN
+        ic=ic+1
+        IF (Master) WRITE(stdout,20) TRIM(string), 'not coded'
       END IF
 
 # ifndef NL_BULK_FLUXES

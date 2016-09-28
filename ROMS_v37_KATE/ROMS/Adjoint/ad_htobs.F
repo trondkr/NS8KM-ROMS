@@ -174,15 +174,6 @@
 !
         Mstr=NstrObs(ng)
         Mend=NendObs(ng)
-
-# ifdef BGQC
-!
-!  Reject observation that fail background quality control check.
-!
-        DO iobs=Mstr,Mend
-          ADmodVal(iobs)=ObsScale(iobs)*ADmodVal(iobs)
-        END DO
-# endif
 !
 !  Free-surface.
 !
@@ -396,7 +387,7 @@
           END IF
         END DO
 # endif
-# if defined DISTRIBUTE && !defined BGQC
+# ifdef DISTRIBUTE
 !
 !-----------------------------------------------------------------------
 !  Collect all observations scaling factors.

@@ -852,10 +852,6 @@
      &                       OCEAN(ng) % ad_t,                          &
      &                       OCEAN(ng) % ad_u,                          &
      &                       OCEAN(ng) % ad_v,                          &
-#   if defined WEAK_CONSTRAINT && defined TIME_CONV
-     &                       OCEAN(ng) % ad_ubar,                       &
-     &                       OCEAN(ng) % ad_vbar,                       &
-#   endif
 #  else
      &                       OCEAN(ng) % ad_ubar,                       &
      &                       OCEAN(ng) % ad_vbar,                       &
@@ -882,10 +878,6 @@
      &                       OCEAN(ng) % tl_t,                          &
      &                       OCEAN(ng) % tl_u,                          &
      &                       OCEAN(ng) % tl_v,                          &
-#   if defined WEAK_CONSTRAINT && defined TIME_CONV
-     &                       OCEAN(ng) % tl_ubar,                       &
-     &                       OCEAN(ng) % tl_vbar,                       &
-#   endif
 #  else
      &                       OCEAN(ng) % tl_ubar,                       &
      &                       OCEAN(ng) % tl_vbar,                       &
@@ -921,9 +913,6 @@
      &                             ad_tflux,                            &
 #   endif
      &                             ad_t, ad_u, ad_v,                    &
-#   if defined WEAK_CONSTRAINT && defined TIME_CONV
-     &                             ad_ubar, ad_vbar,                    &
-#   endif
 #  else
      &                             ad_ubar, ad_vbar,                    &
 #  endif
@@ -943,9 +932,6 @@
      &                             tl_tflux,                            &
 #   endif
      &                             tl_t, tl_u, tl_v,                    &
-#   if defined WEAK_CONSTRAINT && defined TIME_CONV
-     &                             tl_ubar, tl_vbar,                    &
-#   endif
 #  else
      &                             tl_ubar, tl_vbar,                    &
 #  endif
@@ -995,10 +981,6 @@
       real(r8), intent(in) :: ad_t(LBi:,LBj:,:,:,:)
       real(r8), intent(in) :: ad_u(LBi:,LBj:,:,:)
       real(r8), intent(in) :: ad_v(LBi:,LBj:,:,:)
-#    if defined WEAK_CONSTRAINT && defined TIME_CONV
-      real(r8), intent(in) :: ad_ubar(LBi:,LBj:,:)
-      real(r8), intent(in) :: ad_vbar(LBi:,LBj:,:)
-#    endif
 #   else
       real(r8), intent(in) :: ad_ubar(LBi:,LBj:,:)
       real(r8), intent(in) :: ad_vbar(LBi:,LBj:,:)
@@ -1025,10 +1007,6 @@
       real(r8), intent(inout) :: tl_t(LBi:,LBj:,:,:,:)
       real(r8), intent(inout) :: tl_u(LBi:,LBj:,:,:)
       real(r8), intent(inout) :: tl_v(LBi:,LBj:,:,:)
-#    if defined WEAK_CONSTRAINT && defined TIME_CONV
-      real(r8), intent(inout) :: tl_ubar(LBi:,LBj:,:)
-      real(r8), intent(inout) :: tl_vbar(LBi:,LBj:,:)
-#    endif
 #   else
       real(r8), intent(inout) :: tl_ubar(LBi:,LBj:,:)
       real(r8), intent(inout) :: tl_vbar(LBi:,LBj:,:)
@@ -1063,10 +1041,6 @@
       real(r8), intent(in) :: ad_t(LBi:UBi,LBj:UBj,N(ng),3,NT(ng))
       real(r8), intent(in) :: ad_u(LBi:UBi,LBj:UBj,N(ng),2)
       real(r8), intent(in) :: ad_v(LBi:UBi,LBj:UBj,N(ng),2)
-#    if defined WEAK_CONSTRAINT && defined TIME_CONV
-      real(r8), intent(in) :: ad_ubar(LBi:UBi,LBj:UBj,3)
-      real(r8), intent(in) :: ad_vbar(LBi:UBi,LBj:UBj,3)
-#    endif
 #   else
       real(r8), intent(in) :: ad_ubar(LBi:UBi,LBj:UBj,3)
       real(r8), intent(in) :: ad_vbar(LBi:UBi,LBj:UBj,3)
@@ -1095,10 +1069,6 @@
       real(r8), intent(inout) :: tl_t(LBi:UBi,LBj:UBj,N(ng),3,NT(ng))
       real(r8), intent(inout) :: tl_u(LBi:UBi,LBj:UBj,N(ng),2)
       real(r8), intent(inout) :: tl_v(LBi:UBi,LBj:UBj,N(ng),2)
-#    if defined WEAK_CONSTRAINT && defined TIME_CONV
-      real(r8), intent(inout) :: tl_ubar(LBi:UBi,LBj:UBj,3)
-      real(r8), intent(inout) :: tl_vbar(LBi:UBi,LBj:UBj,3)
-#    endif
 #   else
       real(r8), intent(inout) :: tl_ubar(LBi:UBi,LBj:UBj,3)
       real(r8), intent(inout) :: tl_vbar(LBi:UBi,LBj:UBj,3)
@@ -1151,10 +1121,6 @@
      &                       tl_t, ad_t,                                &
      &                       tl_u, ad_u,                                &
      &                       tl_v, ad_v,                                &
-#   if defined WEAK_CONSTRAINT && defined TIME_CONV
-     &                       tl_ubar, ad_ubar,                          &
-     &                       tl_vbar, ad_vbar,                          &
-#   endif
 #  else
      &                       tl_ubar, ad_ubar,                          &
      &                       tl_vbar, ad_vbar,                          &
@@ -1191,10 +1157,6 @@
      &                   tl_t, ad_t,                                    &
      &                   tl_u, ad_u,                                    &
      &                   tl_v, ad_v,                                    &
-#   if defined WEAK_CONSTRAINT && defined TIME_CONV
-     &                   tl_ubar, ad_ubar,                              &
-     &                   tl_vbar, ad_vbar,                              &
-#   endif
 #  else
      &                   tl_ubar, ad_ubar,                              &
      &                   tl_vbar, ad_vbar,                              &
@@ -1274,10 +1236,6 @@
      &                       OCEAN(ng) % tl_t,                          &
      &                       OCEAN(ng) % tl_u,                          &
      &                       OCEAN(ng) % tl_v,                          &
-#   if defined WEAK_CONSTRAINT && defined TIME_CONV
-     &                       OCEAN(ng) % tl_ubar,                       &
-     &                       OCEAN(ng) % tl_vbar,                       &
-#   endif
 #  else
      &                       OCEAN(ng) % tl_ubar,                       &
      &                       OCEAN(ng) % tl_vbar,                       &
@@ -1304,10 +1262,6 @@
      &                       OCEAN(ng) % ad_t,                          &
      &                       OCEAN(ng) % ad_u,                          &
      &                       OCEAN(ng) % ad_v,                          &
-#   if defined WEAK_CONSTRAINT && defined TIME_CONV
-     &                       OCEAN(ng) % ad_ubar,                       &
-     &                       OCEAN(ng) % ad_vbar,                       &
-#   endif
 #  else
      &                       OCEAN(ng) % ad_ubar,                       &
      &                       OCEAN(ng) % ad_vbar,                       &
@@ -1343,9 +1297,6 @@
      &                             tl_tflux,                            &
 #   endif
      &                             tl_t, tl_u, tl_v,                    &
-#   if defined WEAK_CONSTRAINT && defined TIME_CONV
-     &                             tl_ubar, tl_vbar,                    &
-#   endif
 #  else
      &                             tl_ubar, tl_vbar,                    &
 #  endif
@@ -1365,9 +1316,6 @@
      &                             ad_tflux,                            &
 #   endif
      &                             ad_t, ad_u, ad_v,                    &
-#   if defined WEAK_CONSTRAINT && defined TIME_CONV
-     &                             ad_ubar, ad_vbar,                    &
-#   endif
 #  else
      &                             ad_ubar, ad_vbar,                    &
 #  endif
@@ -1417,10 +1365,6 @@
       real(r8), intent(in) :: tl_t(LBi:,LBj:,:,:,:)
       real(r8), intent(in) :: tl_u(LBi:,LBj:,:,:)
       real(r8), intent(in) :: tl_v(LBi:,LBj:,:,:)
-#    if defined WEAK_CONSTRAINT && defined TIME_CONV
-      real(r8), intent(in) :: tl_ubar(LBi:,LBj:,:)
-      real(r8), intent(in) :: tl_vbar(LBi:,LBj:,:)
-#    endif
 #   else
       real(r8), intent(in) :: tl_ubar(LBi:,LBj:,:)
       real(r8), intent(in) :: tl_vbar(LBi:,LBj:,:)
@@ -1447,10 +1391,6 @@
       real(r8), intent(inout) :: ad_t(LBi:,LBj:,:,:,:)
       real(r8), intent(inout) :: ad_u(LBi:,LBj:,:,:)
       real(r8), intent(inout) :: ad_v(LBi:,LBj:,:,:)
-#    if defined WEAK_CONSTRAINT && defined TIME_CONV
-      real(r8), intent(inout) :: ad_ubar(LBi:,LBj:,:)
-      real(r8), intent(inout) :: ad_vbar(LBi:,LBj:,:)
-#    endif
 #   else
       real(r8), intent(inout) :: ad_ubar(LBi:,LBj:,:)
       real(r8), intent(inout) :: ad_vbar(LBi:,LBj:,:)
@@ -1485,10 +1425,6 @@
       real(r8), intent(in) :: tl_t(LBi:UBi,LBj:UBj,N(ng),3,NT(ng))
       real(r8), intent(in) :: tl_u(LBi:UBi,LBj:UBj,N(ng),2)
       real(r8), intent(in) :: tl_v(LBi:UBi,LBj:UBj,N(ng),2)
-#    if defined WEAK_CONSTRAINT && defined TIME_CONV
-      real(r8), intent(in) :: tl_ubar(LBi:UBi,LBj:UBj,3)
-      real(r8), intent(in) :: tl_vbar(LBi:UBi,LBj:UBj,3)
-#    endif
 #   else
       real(r8), intent(in) :: tl_ubar(LBi:UBi,LBj:UBj,3)
       real(r8), intent(in) :: tl_vbar(LBi:UBi,LBj:UBj,3)
@@ -1517,10 +1453,6 @@
       real(r8), intent(inout) :: ad_t(LBi:UBi,LBj:UBj,N(ng),3,NT(ng))
       real(r8), intent(inout) :: ad_u(LBi:UBi,LBj:UBj,N(ng),2)
       real(r8), intent(inout) :: ad_v(LBi:UBi,LBj:UBj,N(ng),2)
-#    if defined WEAK_CONSTRAINT && defined TIME_CONV
-      real(r8), intent(inout) :: ad_ubar(LBi:UBi,LBj:UBj,3)
-      real(r8), intent(inout) :: ad_vbar(LBi:UBi,LBj:UBj,3)
-#    endif
 #   else
       real(r8), intent(inout) :: ad_ubar(LBi:UBi,LBj:UBj,3)
       real(r8), intent(inout) :: ad_vbar(LBi:UBi,LBj:UBj,3)
@@ -1573,10 +1505,6 @@
      &                       ad_t, tl_t,                                &
      &                       ad_u, tl_u,                                &
      &                       ad_v, tl_v,                                &
-#   if defined WEAK_CONSTRAINT && defined TIME_CONV
-     &                       ad_ubar, tl_ubar,                          &
-     &                       ad_vbar, tl_vbar,                          &
-#   endif
 #  else
      &                       ad_ubar, tl_ubar,                          &
      &                       ad_vbar, tl_vbar,                          &
@@ -1613,10 +1541,6 @@
      &                   ad_t, tl_t,                                    &
      &                   ad_u, tl_u,                                    &
      &                   ad_v, tl_v,                                    &
-#   if defined WEAK_CONSTRAINT && defined TIME_CONV
-     &                   ad_ubar, tl_ubar,                              &
-     &                   ad_vbar, tl_vbar,                              &
-#   endif
 #  else
      &                   ad_ubar, tl_ubar,                              &
      &                   ad_vbar, tl_vbar,                              &
@@ -2187,17 +2111,6 @@
      &                          GRID(ng) % umask,                       &
      &                          GRID(ng) % vmask,                       &
 #  endif
-#  ifdef BNORM
-#    ifdef SOLVE3D
-     &                          OCEAN(ng) % e_t,                        &
-     &                          OCEAN(ng) % e_u,                        &
-     &                          OCEAN(ng) % e_v,                        &
-#    else
-     &                          OCEAN(ng) % e_ubar,                     &
-     &                          OCEAN(ng) % e_vbar,                     &
-#    endif
-     &                          OCEAN(ng) % e_zeta,                     &
-#  endif
 #  ifdef SOLVE3D
      &                          GRID(ng) % Hz,                          &
 #  else
@@ -2232,14 +2145,6 @@
      &                                Kinp, Kout, Ninp, Nout,           &
 #  ifdef MASKING
      &                                rmask, umask, vmask,              &
-#  endif
-#  ifdef BNORM
-#    ifdef SOLVE3D
-     &                                e_t, e_u, e_v,                    &
-#    else
-     &                                e_ubar, e_vbar,                   &
-#    endif
-     &                                e_zeta,                           &
 #  endif
 #  ifdef SOLVE3D
      &                                Hz,                               &
@@ -2295,17 +2200,6 @@
       real(r8), intent(inout) :: ad_u(LBi:,LBj:,:,:)
       real(r8), intent(inout) :: ad_v(LBi:,LBj:,:,:)
 #   endif
-#   ifdef BNORM
-      real(r8), intent(in) :: e_zeta(LBi:,LBj:,:)
-#    ifdef SOLVE3D
-      real(r8), intent(in) :: e_t(LBi:,LBj:,:,:,:)
-      real(r8), intent(in) :: e_u(LBi:,LBj:,:,:)
-      real(r8), intent(in) :: e_v(LBi:,LBj:,:,:)
-#    else
-      real(r8), intent(in) :: e_ubar(LBi:,LBj:,:)
-      real(r8), intent(in) :: e_vbar(LBi:,LBj:,:)
-#    endif
-#   endif
 #  else
 #   ifdef MASKING
       real(r8), intent(in) :: rmask(LBi:UBi,LBj:UBj)
@@ -2333,17 +2227,6 @@
       real(r8), intent(inout) :: ad_t(LBi:UBi,LBj:UBj,N(ng),3,NT(ng))
       real(r8), intent(inout) :: ad_u(LBi:UBi,LBj:UBj,N(ng),2)
       real(r8), intent(inout) :: ad_v(LBi:UBi,LBj:UBj,N(ng),2)
-#   endif
-#   ifdef BNORM
-      real(r8), intent(in) :: e_zeta(LBi:UBi,LBj:UBj,NSA)
-#    ifdef SOLVE3D
-      real(r8), intent(in) :: e_t(LBi:UBi,LBj:UBj,N(ng),NSA,NT(ng))
-      real(r8), intent(in) :: e_u(LBi:UBi,LBj:UBj,N(ng),NSA)
-      real(r8), intent(in) :: e_v(LBi:UBi,LBj:UBj,N(ng),NSA)
-#    else
-      real(r8), intent(in) :: e_ubar(LBi:UBi,LBj:UBj,NSA)
-      real(r8), intent(in) :: e_vbar(LBi:UBi,LBj:UBj,NSA)
-#    endif
 #   endif
 #  endif
 !
@@ -2376,18 +2259,9 @@
 !
 !  Free-surface.
 !
-#  ifndef BNORM
       scale=0.5_r8*g*rho0
-#  endif
       DO j=J_R_RANGE
         DO i=I_R_RANGE
-#  ifdef BNORM
-          IF (e_zeta(i,j,1).gt.0.0_r8) THEN
-            scale=1.0_r8/(e_zeta(i,j,1)*e_zeta(i,j,1))
-          ELSE
-            scale=1.0_r8
-          END IF
-#  endif
           ad_zeta(i,j,Kout)=scale*tl_zeta(i,j,Kinp)
 #  ifdef MASKING
           ad_zeta(i,j,Kout)=ad_zeta(i,j,Kout)*rmask(i,j)
@@ -2402,15 +2276,7 @@
       cff=0.25_r8*rho0
       DO j=J_R_RANGE
         DO i=I_U_RANGE
-#  ifdef BNORM
-          IF (e_ubar(i,j,1).gt.0.0_r8) THEN
-            scale=1.0_r8/(e_ubar(i,j,1)*e_ubar(i,j,1))
-          ELSE
-            scale=1.0_r8
-          ENDIF
-#  else
           scale=cff*(h(i-1,j)+h(i,j))
-#  endif
           ad_ubar(i,j,Kout)=scale*tl_ubar(i,j,Kinp)
 #   ifdef MASKING
           ad_ubar(i,j,Kout)=ad_ubar(i,j,Kout)*umask(i,j)
@@ -2423,15 +2289,7 @@
       cff=0.25_r8*rho0
       DO j=J_V_RANGE
         DO i=I_R_RANGE
-#  ifdef BNORM
-          IF (e_vbar(i,j,1).gt.0.0_r8) THEN
-            scale=1.0_r8/(e_vbar(i,j,1)*e_vbar(i,j,1))
-          ELSE
-            scale=1.0_r8
-          ENDIF
-#  else
           scale=cff*(h(i,j-1)+h(i,j))
-#  endif
           ad_vbar(i,j,Kout)=scale*tl_vbar(i,j,Kinp)
 #   ifdef MASKING
           ad_vbar(i,j,Kout)=ad_vbar(i,j,Kout)*vmask(i,j)
@@ -2446,15 +2304,7 @@
       DO k=1,N(ng)
         DO j=J_R_RANGE
           DO i=I_U_RANGE
-#  ifdef BNORM
-            IF (e_u(i,j,k,1).gt.0.0_r8) THEN
-              scale=1.0_r8/(e_u(i,j,k,1)*e_u(i,j,k,1))
-            ELSE
-              scale=1.0_r8
-            END IF
-#  else
             scale=cff*(Hz(i-1,j,k)+Hz(i,j,k))
-#  endif
             ad_u(i,j,k,Nout)=scale*tl_u(i,j,k,Ninp)
 #   ifdef MASKING
             ad_u(i,j,k,Nout)=ad_u(i,j,k,Nout)*umask(i,j)
@@ -2469,15 +2319,7 @@
       DO k=1,N(ng)
         DO j=J_V_RANGE
           DO i=I_R_RANGE
-#  ifdef BNORM
-            IF (e_v(i,j,k,1).gt.0.0_r8) THEN
-              scale=1.0_r8/(e_v(i,j,k,1)*e_v(i,j,k,1))
-            ELSE
-              scale=1.0_r8
-            END IF
-#  else
             scale=cff*(Hz(i,j-1,k)+Hz(i,j,k))
-#  endif
             ad_v(i,j,k,Nout)=scale*tl_v(i,j,k,Ninp)
 #   ifdef MASKING
             ad_v(i,j,k,Nout)=ad_v(i,j,k,Nout)*vmask(i,j)
@@ -2499,15 +2341,7 @@
         DO k=1,N(ng)
           DO j=J_R_RANGE
             DO i=I_R_RANGE
-#  ifdef BNORM
-              IF (e_t(i,j,k,1,itrc).gt.0.0_r8) THEN
-                scale=1.0_r8/(e_t(i,j,k,1,itrc)*e_t(i,j,k,1,itrc))
-              ELSE
-                scale=1.0_r8
-              END IF
-#  else
               scale=cff*Hz(i,j,k)
-#  endif
               ad_t(i,j,k,Nout,itrc)=scale*tl_t(i,j,k,Ninp,itrc)
 #   ifdef MASKING
               ad_t(i,j,k,Nout,itrc)=ad_t(i,j,k,Nout,itrc)*rmask(i,j)

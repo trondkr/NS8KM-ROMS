@@ -127,7 +127,7 @@
 #undef  WRF_COUPLING       /* coupling to WRF atmospheric model */
 
 /* SEA ICE */
-#define ICE_MODEL          /* turn ON or OFF sea ice module */
+#undef ICE_MODEL          /* turn ON or OFF sea ice module */
 
 /* ATMOSPHERIC FORCING */
 #define BULK_FLUXES        /* turn ON or OFF bulk fluxes computation */
@@ -149,7 +149,7 @@
 # define COOL_SKIN         /* turn ON or OFF cool skin correction *//* Ikke def hos Frode*/
 #endif
 
-#define ATM_PRESS          /* use to impose atmospheric pressure onto sea surface */
+#undef ATM_PRESS          /* use to impose atmospheric pressure onto sea surface */
 #define SOLAR_SOURCE       /* define solar radiation source term */
 #define SPECIFIC_HUMIDITY  /* if input is specific humidity in kg/kg */
 

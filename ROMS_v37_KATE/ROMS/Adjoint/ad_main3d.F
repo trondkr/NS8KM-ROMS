@@ -59,10 +59,7 @@
       defined FORCING_SV
       USE ad_ini_fields_mod, ONLY : ad_out_fields, ad_out_zeta
 # endif
-# ifdef WEAK_CONSTRAINT
-      USE ad_force_dual_mod, ONLY : ad_force_dual
-# endif
-# ifdef FORCING_SV
+# if defined WEAK_CONSTRAINT || defined FORCING_SV
       USE ad_forcing_mod, ONLY : ad_forcing
 # endif
 # ifdef GLS_MIXING_NOT_YET
@@ -471,7 +468,7 @@
         DO ng=1,Ngrids
           IF (ProcessObs(ng)) THEN
             DO tile=first_tile(ng),last_tile(ng),+1
-              CALL ad_force_dual (ng, tile, kstp(ng), nstp(ng))
+              CALL ad_forcing (ng, tile, kstp(ng), nstp(ng))
             END DO
 !$OMP BARRIER
           END IF
@@ -642,21 +639,6 @@
 !$OMP BARRIER
         END DO
         IF (exit_flag.ne.NoError) RETURN
-
-# ifdef FORCING_SV
-!
-!-----------------------------------------------------------------------
-!  Compute the adjoint forcing for the forcing singular vectors.
-!-----------------------------------------------------------------------
-!
-        DO ng=1,Ngrids
-          DO tile=first_tile(ng),last_tile(ng),+1
-            CALL ad_set_depth (ng, tile)
-            CALL ad_forcing (ng, tile, kstp(ng), nstp(ng))
-          END DO
-!$OMP BARRIER
-        END DO
-# endif
 !
 !-----------------------------------------------------------------------
 !  Update 3D time-level indices.
@@ -695,7 +677,8 @@
           END IF
         END DO
 
-# if (defined STOCHASTIC_OPT && !defined STOCH_OPT_WHITE)
+# if (defined STOCHASTIC_OPT && !defined STOCH_OPT_WHITE) || \
+      defined FORCING_SV
 !
 !-----------------------------------------------------------------------
 !  Define adjoint output arrays.
@@ -715,7 +698,6 @@
           END IF
         END DO
 # endif
-# ifndef FORCING_SV
 !
 !-----------------------------------------------------------------------
 !  If not a restart, initialize all time levels and compute other
@@ -741,6 +723,18 @@
             END DO
 !$OMP BARRIER
           END IF
+        END DO
+# ifdef FORCING_SV
+!
+!-----------------------------------------------------------------------
+!  Compute the adjoint forcing for the forcing singular vectors.
+!-----------------------------------------------------------------------
+!
+        DO ng=1,Ngrids
+          DO tile=first_tile(ng),last_tile(ng),+1
+            CALL ad_forcing (ng, tile, kstp(ng), nstp(ng))
+          END DO
+!$OMP BARRIER
         END DO
 # endif
 
@@ -789,7 +783,6 @@
         DO ng=1,Ngrids
           IF (iic(ng).ne.ntstart(ng)) THEN
             DO tile=first_tile(ng),last_tile(ng),+1
-              CALL ad_set_depth (ng, tile)
               CALL frc_ADgather (ng, tile)
             END DO
 !$OMP BARRIER

@@ -37,8 +37,8 @@
 #
 #PBS -N "COPERNICUS"
 #PBS -A imr
-#PBS -l mppwidth=512
-#PBS -l walltime=420:00:00
+#PBS -l mppwidth=64
+#PBS -l walltime=20:00:00
 #PBS -l mppmem=1000mb
 #PBS -m abe
 #PBS -M trond.kristiansen@imr.no
@@ -64,7 +64,7 @@ set ROMS_ROOT="/work/users/trondk/src/KATE_ROMS"
 
 #  Set storage directory for some of the relevant output NetCDF files.
 
-set STORAGE="/work/users/trondk/NS8km/STORAGE"
+set STORAGE="/work/users/trondk/NS8km/STORAGETEST"
 
 #---------------------------------------------------------------------
 #  Application title and IO file prefix.
@@ -88,15 +88,15 @@ set GRDname=${FORCINGROOT}/GRID/nordsjoen_8km_grid_hmax20m_v4.nc
 
 # Set Open boundary conditions file, if any.
 
-set BRYname=${FORCINGROOT}/GLORYS2V3/nordsjoen_8km_bry_GLORYS_20091115_to_20131215.nc
+set BRYname=${FORCINGROOT}/GLORYS2V3/nordsjoen_8km_bry_GLORYS_20130515_to_20141215_v2.nc
 
 # Set Climatology file
 
-set CLMname=${FORCINGROOT}/GLORYS2V3/nordsjoen_8km_clim_GLORYS_20091115_to_20131215.nc
+set CLMname=${FORCINGROOT}/GLORYS2V3/nordsjoen_8km_clim_GLORYS_20130515_to_20141215_v2.nc
 
 # Set starting sequential assimilation first guess.
 
-set FIRST_GUESS=${FORCINGROOT}/GLORYS2V3/ns8km_ini_22998.nc
+set FIRST_GUESS=${FORCINGROOT}/GLORYS2V3/ns8km_ini_24454.nc
 
 # Set background-error covariance standard deviations file.
 
@@ -108,7 +108,7 @@ set NRMname=${FORCINGROOT}/OBS/NS8KM_nrm_i.nc
 
 # Set observations file.
 
-set OBSname=${FORCINGROOT}/OBS/NS8KM_obsSST_2009_to_2012.nc
+set OBSname=${FORCINGROOT}/OBS/NS8KM_AVHRR_obsSST_2013_to_2014.nc
 
 #---------------------------------------------------------------------
 #  Executables and standard input files
@@ -149,8 +149,8 @@ set SUBSTITUTE=${ROMS_ROOT}/ROMS/Bin/substitute
 #  Set  starting and ending year day of the sequential data assimilation.
 #  (Reference time: days since 2006-01-01 00:00:00)
 
-set STR_DAY=22998               # July 12, 2006 00:00:00 UTC/GMT
-set END_DAY=24106
+set STR_DAY=24454               # July 12, 2006 00:00:00 UTC/GMT
+set END_DAY=24462
 
 #  Set data assimilation cycle time window (days).
 
@@ -162,12 +162,12 @@ set DayStep=7
 
 #  Set model parallel partition.
 
-set NtileI=32
-set NtileJ=16
+set NtileI=8
+set NtileJ=8
 
 #  Set number of parallel nodes to use, NCPUS = NtileI * NtileJ.
 
-set NCPUS=512
+set NCPUS=64
 
 #  Set number of outer and inner loops.
 
@@ -179,10 +179,10 @@ set Ninner=7
 #  model run as the first guess fot the next assimilation cycle.
 #  It MUST be equal to NTIMES.
 
-set NRST=6048 #6048 #3024
-set DT=100 #100
-set DELTA=48 #16 #4 #86400/320 = time steps in 24 hours. Divide that by 10 or so to get deltaDT = 27
-set AVGDT=864 #432 #864 #432 #86400/DT
+set NRST=6048 #3024 #6048 #3024
+set DT=100 #200 #100 200
+set DELTA=48 #24 #48 24
+set AVGDT=864 #432 #432 #864 #432 #86400/DT
 
 #  Set enviromental variables to avoid running in the head node.
 
@@ -203,7 +203,7 @@ set INIname=${PREFIX}_ini_${DAY}.nc
 set ITLname=${PREFIX}_itl_${DAY}.nc
 
 # Delete old log files
-/bin/rm ${MYROOT}/STORAGE/*log*
+/bin/rm ${MYROOT}/STORAGETEST/*log*
 # Delete old error and output files.
 /bin/rm -f *.in~ *.tmp~ NS8KM.e* NS8KM.o*
 

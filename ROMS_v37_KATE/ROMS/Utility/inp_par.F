@@ -933,8 +933,6 @@
         IF (LsshCLM(ng).or.                                             &
             Lm2CLM (ng).or.LnudgeM2CLM(ng).or.                          &
             Lm3CLM (ng).or.LnudgeM3CLM(ng).or.                          &
-            LmiCLM (ng).or.LnudgeMICLM(ng).or.                          &
-            LaiCLM (ng).or.LnudgeAICLM(ng).or.                          &
             ANY(LtracerCLM(:,ng)).or.ANY(LnudgeTCLM(:,ng))) THEN
           Lclimatology(ng)=.TRUE.
         END IF
@@ -950,8 +948,6 @@
 #ifdef SOLVE3D
         IF (LnudgeM2CLM(ng).or.                                         &
      &      LnudgeM3CLM(ng).or.                                         &
-     &      LnudgeMICLM(ng).or.                                         &
-     &      LnudgeAICLM(ng).or.                                         &
      &      ANY(LnudgeTCLM(:,ng))) THEN
           Lnudging(ng)=.TRUE.
         END IF
