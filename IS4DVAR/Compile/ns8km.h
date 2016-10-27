@@ -142,10 +142,10 @@
 # undef  ANA_TAIR          /* analytical surface air temperature */
 # undef  ANA_WINDS         /* analytical surface winds */
 # define EMINUSP           /* turn ON internal calculation of E-P */
-# define ANA_SRFLUX        /* analytical surface shortwave radiation flux */
 # define ALBEDO            /* use albedo equation for shortwave radiation */
-# undef  LONGWAVE_OUT      /* compute outgoing longwave radiation */
-# define LONGWAVE          /* Compute net longwave radiation internally */
+# define SHORTWAVE
+# define LONGWAVE_OUT
+# define DIURNAL_SRFLUX
 # define COOL_SKIN         /* turn ON or OFF cool skin correction *//* Ikke def hos Frode*/
 #endif
 
@@ -159,11 +159,6 @@
 #define ADD_FSOBC          /* Add tidal elevation to processed OBC data */
 #define ADD_M2OBC          /* Add tidal currents  to processed OBC data */
 #undef  RAMP_TIDES         /* Spin up tidal forcing */
-
-
-/* ELVER */
-#undef UV_PSOURCE         /* turn ON or OFF point Sources/Sinks */
-#undef TS_PSOURCE         /* turn ON or OFF point Sources/Sinks */
 
 /* SEA ICE */
 #ifdef ICE_MODEL

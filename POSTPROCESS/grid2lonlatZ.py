@@ -16,6 +16,8 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.basemap import Basemap
 from pylab import *
 import string, copy
+import glob
+
 try:
     import ESMF
 except ImportError:
@@ -25,33 +27,33 @@ except ImportError:
 
 def findWeights(inlevels, outlevels):
     weights={}
-    debug=False
+    debug=True
 
     for i,outlevel in enumerate(outlevels):
+
+        print "\n##############################\n=> Looking for output depth: %s"%(outlevel)
         if outlevel in inlevels:
             weights[outlevel]=[np.abs(np.subtract.outer(inlevels, outlevel)).argmin(),1.0]
-            print "Found direct depth level %s %s"%(outlevel,weights[outlevel])
+            print "=> Indata : Found corresponding depth level: %s m weight: %s"%(outlevel,weights[outlevel])
         else:
             inlevelscopy=inlevels[:]
             index1=np.abs(np.subtract.outer(inlevelscopy, outlevel)).argmin()
             index1=np.abs(np.subtract.outer(inlevels, inlevelscopy[index1])).argmin()
             if debug:
-                print "Want depth: %s"%(outlevel)
-                print "=> index1 %s value %s"%(index1,inlevels[index1])
+                print "=> Indata : at index1 %s at depth: %s "%(index1,inlevels[index1])
 
             inlevelscopy.pop(index1)
             index2=np.abs(np.subtract.outer(inlevelscopy, outlevel)).argmin()
             index2=np.abs(np.subtract.outer(inlevels, inlevelscopy[index2])).argmin()
-
-            if debug:
-                print "=> index2 %s value %s"%(index2,inlevels[index2])
-                print abs(outlevel-inlevels[index2]), float(abs(inlevels[index2]-inlevels[index1]))
-                print abs(outlevel-inlevels[index1]), float(abs(inlevels[index2]-inlevels[index1]))
-
+           
             weights[outlevel]=[index1,index2,abs(outlevel-inlevels[index2])/float(abs(inlevels[index2]-inlevels[index1])),
             abs(outlevel-inlevels[index1])/float(abs(inlevels[index2]-inlevels[index1]))]
+
             if debug:
-                print "Found in-between depth levels %s %s"%(outlevel,weights[outlevel])
+                print "=> Indata : at index2 %s at depth: %s"%(index2,inlevels[index2])
+                print "=> weight on depth %s : %s (%s)"%(inlevels[index2],abs(outlevel-inlevels[index2]), float(abs(inlevels[index2]-inlevels[index1])))
+                print "=> weight on depth %s : %s (%s)"%(inlevels[index1],abs(outlevel-inlevels[index1]), float(abs(inlevels[index2]-inlevels[index1])))
+                print "=> Interpolation weights for depth level: %s is %s"%(outlevel,weights[outlevel])
     return weights
 
 def progressbar(message, percent, fileCounter):
@@ -119,11 +121,9 @@ if hexagon:
     mypath="/work/shared/imr/NS8KM/Z-LEVEL-ASSIMILATION2010-2013"
     outputdirname="/work/shared/imr/NS8KM/COPERNICUS_DELIVERY_30052016_REGRIDDED"
 else:
-    mypath="/Users/trondkr/Dropbox/delivery-COPERNICUS/salinity"
-    outputdirname="/Users/trondkr/Projects/NOWMAPS/grid2lonlat/salt"
-
-infiles = [ f for f in listdir(mypath) if isfile(join(mypath,f)) ]
-infiles.sort()
+    mypath="/Users/trondkr/Projects/NOWMAPS/COPERNICUS_DELIVERY_30052016_REGRIDDED"
+    outputdirnamesalt="/Users/trondkr/Projects/NOWMAPS/grid2lonlat/vosaline1993-2009"
+    outputdirnametemp="/Users/trondkr/Projects/NOWMAPS/grid2lonlat/votemper1993-2009"
 
 # -----------
 
@@ -135,27 +135,19 @@ FIRST = True
 # so the input and output grid are equal.
 
 inputgridEqualToOutputgrid=True
-
-# Dette kunne tas automatisk fra input fil
-# På den annen side kan nå variable lett kuttes ut
-
-
-# 2D variable, YX
-varY = []  # konverterer som test på interpolasjonen
-
-# 2D variable, YX
-#varXY = ['lon', 'lat']  # konverterer som test på interpolasjonen
-varXY=[]
-# 3D variable, TYX
-#varTYX =['Elev']
-varTYX=[]
-
-# 4D variable
 varTZYX = ['vosaline']
+#varTZYX = ['votemper']
 
 # Levels
+
+inlevels = [0, 3, 10, 15, 20, 30, 50, 75, 100, 125, 150, 200, 250, 300, 400, 500, 600,
+          750, 1000, 1500, 2000, 3000, 4000, 5000]
+
+# If inlevels different than output depth levels
 inlevels = [0, 5, 10, 20, 30, 50, 75, 100, 150, 200, 250, 300, 400, 500, 600,
           700, 800, 1000, 1250, 1500, 1750, 2000, 2250, 2500, 2750, 3000]
+
+
 
 outlevels = [0, 3, 10, 15, 20, 30, 50, 75, 100, 125, 150, 200, 250, 300, 400, 500, 600,
           750, 1000, 1500, 2000, 3000, 4000, 5000]
@@ -167,26 +159,38 @@ print "\nStarted converting netcdf files in polar stereographic projection to"
 print "rectangular grid. Input files need to be on Z-level. Scrip must be run in"
 print "directory where inputfiles are stored. Results will be stored in sub-diretory: RESULTS\n"
 
-if not os.path.exists(outputdirname):
-        os.makedirs(outputdirname)
+for myvar in varTZYX:
+    
+    selector='*%s*'%(myvar)
+    infiles = glob.glob(mypath+'/'+selector)
+    infiles.sort()
 
-for infile in infiles:
-    print infile
-    for myvar in varTZYX:
+    for infile in infiles:
         # Read data
         outfilename=""
-        infilename=""
-        outfilename = outputdirname+"/"+infile[:-18]+str(myvar)+"-"+"20160621.nc"
-        infilename = mypath+"/"+infile
-        f0 = Dataset(infilename)
-        print "Opened input file: %s"%(infilename)
+        if myvar=='vosaline':
+            outfilename = outputdirnamesalt+"/"+os.path.basename(infile)[:-29]+str(myvar)+"-"+"20161014.nc"
+            if not os.path.exists(outputdirnamesalt):
+                os.makedirs(outputdirnamesalt)
+         
+        if myvar=='votemper':
+            outfilename = outputdirnametemp+"/"+os.path.basename(infile)[:-29]+str(myvar)+"-"+"20161014.nc"
+            if not os.path.exists(outputdirnametemp):
+                os.makedirs(outputdirnametemp)
+
+        f0 = Dataset(infile)
+        print "Opened input file: %s"%(infile)
         print "Results will be stored to: %s"%(outfilename)
 
         # Create lookup-table on first loop of infiles
         if (FIRST):
             temp0 = np.array(f0.variables[varTZYX[0]][0,0,:,:])
-            lonin=f0.variables["longitude"][:]
-            latin=f0.variables["latitude"][:]
+            if inputgridEqualToOutputgrid:
+                lonin=f0.variables["longitude"][:]
+                latin=f0.variables["latitude"][:]
+            else:
+                lonin=f0.variables["longitude"][:]
+                latin=f0.variables["latitude"][:]
 
             sea_mask = where(temp0 == UNDEF, 0, 1)
 
@@ -238,9 +242,10 @@ for infile in infiles:
                 gridCoordLon[...] = llon
                 gridCoordLat[...] = llat  
             else:
-                romsgrid = ESMF.Grid(filename=infilename, filetype=ESMF.FileFormat.GRIDSPEC,
+                romsgrid = ESMF.Grid(filename=infile, filetype=ESMF.FileFormat.GRIDSPEC,
                                           is_sphere=True, coord_names=['longitude','latitude'], add_mask=False)
-        
+            
+            
             rectlons=romsgrid.coords[0][0][:]
             rectlats=romsgrid.coords[0][1][:]
             print "\nSOURCE GRID properties"
@@ -309,87 +314,6 @@ for infile in infiles:
         v.units = 'degrees_north'
         v[:] = lat
 
-        # Data variable
-        for var in varXY:
-            print "Creating (x,y) variable", var
-            v0 = f0.variables[var]
-            v1 = f1.createVariable(var, 's', ('latitude', 'longitude'), fill_value=UNDEF)
-            try:
-                v1.long_name = v0.long_name
-                v1.units = v0.units
-            except:
-                pass
-
-            v1.scale_factor = v0.scale_factor
-            v1.add_offset = v0.add_offset
-            v1.missing_value = UNDEF
-          #  v1._CoordinateAxes = "lat lon "
-
-            # Modification
-            if var == 'Topo':
-                v1.standard_name = 'sea_floor_depth'
-
-
-            F0 = np.array(v0[:,:])
-            #undef = (F0==-32767)
-            F1 = sample2D(F0, X, Y)
-            # hadde trengt et valid-range atributt, U og V er ofte < null
-            F1[F1<=-10.0] = FUNDEF              # ikke helt bra, temperature kan være < 0
-
-
-            v1[:,:] = F1
-
-        for var in varY:
-            print var
-            v0 = f0.variables[var]
-            v1 = f1.createVariable(var, 'f', ('depth'),
-                                   fill_value=UNDEF)
-            try:
-                v1.long_name = v0.long_name
-                v1.units = v0.units
-            except:
-                pass
-
-        for var in varTYX:
-            print var
-            v0 = f0.variables[var]
-            v1 = f1.createVariable(var, 'i2', ('time', 'latitude', 'longitude'),
-                                   fill_value=UNDEF)
-
-            if var == 'ssflux':
-                v1.standard_name = "surface_salinity_flux"
-                v1.field="ssflux, scalar, series"
-            elif var == 'shflux':
-                v1.standard_name = "surface_downward_heat_flux_in_sea_water"
-                v1.field="shflux, scalar, series"
-            elif var=="zeta":
-                 v1.standard_name = "sea_surface_height_above_geoid"
-                 v1.field="zeta, scalar, series"
-            else:
-                v1.standard_name=v0.standard_name
-
-            v1.long_name = v0.long_name
-            v1.units = v0.units
-            v1.scale_factor=v0.scale_factor
-            v1.add_offset=v0.add_offset
-           # v1.valid_min=v0.valid_min
-           # v1.valid_max=v0.valid_max
-            v1.missing_value=v0.missing_value
-          #  v1._CoordinateAxes = "time lat lon "
-
-            ntimes = len(f0.variables['time'][:])
-            for i in xrange(ntimes):
-                F0 = v0[i,:,:]
-                # Extra trick if f0 has _FillValue
-                F0 = np.where(F0.mask, FUNDEF, F0)
-                F1 = sample2D(F0, X, Y)
-                # hadde trengt et valid-range atributt, U og V er ofte < null
-                #    F1[F1<=-10.0] = UNDEF
-                #B1 = (F1 - v1.add_offset) / v1.scale_factor
-                #B1[B1 < -1000] = UNDEF
-                F1[F1 < -1000] = v1.add_offset + v1.scale_factor*UNDEF
-                v1[i,:,:] = F1
-
         v0 = f0.variables[myvar]
       
         v1 = f1.createVariable(myvar, 'i2', ('time', 'depth', 'latitude', 'longitude'),fill_value=UNDEF)
@@ -409,13 +333,7 @@ for infile in infiles:
 
 
         # Modifications
-        if myvar == 'vozocrtx':
-             v1.standard_name = "eastward_sea_water_velocity"
-             v1.field="eastward velocity, scalar, series"
-        elif myvar == 'vomecrty':
-             v1.standard_name = "northward_sea_water_velocity"
-             v1.field="northward velocity, scalar, series"
-        elif myvar == 'vosaline':
+        if myvar == 'vosaline':
              v1.units = "1"
              v1.standard_name = "sea_water_salinity"
              v1.long_name="salinity"
@@ -425,16 +343,7 @@ for infile in infiles:
              v1.standard_name = "sea_water_temperature"
              v1.long_name="temperature"
              v1.field="temperature, scalar, series"
-        elif myvar== "shflux":
-            v1.units=""
-            v1.standard_name = "surface_downward_heat_flux_in_sea_water";
-
-        elif myvar == 'zeta':
-            # v1.units = "degree_Celsius"
-             v1.standard_name = "sea_surface_height"
-            # v1.long_name="temperature"
-             v1.field="ssflux, scalar, series"
-
+      
         ntimes = len(f0.variables['time'][:])
         for l in xrange(ntimes):
             Fz = np.squeeze(v0[l,:,:,:])
@@ -445,7 +354,9 @@ for infile in infiles:
                 fieldDst[...] = v1.add_offset + v1.scale_factor*UNDEF
 
                 weight=weights[outlevels[k]]
-               
+                print "Finding weights to use for interpolation (or no interpolation)"
+                print "=>> weights: %s"%(weight)
+
                 ## Values are found at equal depth in infile as will be in target
                 if len(weight)==2:
                     index=int(weight[0])
@@ -471,25 +382,27 @@ for infile in infiles:
                     weight2=float(weight[3])
                     print "Interpolating vertically between %s and %s to find values at %s"%(inlevels[index1],inlevels[index2],outlevels[k])
                     if inputgridEqualToOutputgrid:
-                        fieldSrc[:,:] = Fz[index1,:,:]
                         result1=np.squeeze(Fz[index1,:,:])
                     else:
                         fieldSrc[:,:] = np.fliplr(np.rot90(np.squeeze(Fz[index1,:,:]),3))
                         F1 = regridSrc2Dst(fieldSrc, fieldDst, zero_region=ESMF.Region.SELECT)
                         result1=F1.data
-                    result1[result1 < -1000] =  v1.add_offset + v1.scale_factor*UNDEF
                     
                     if inputgridEqualToOutputgrid:
-                        fieldSrc[:,:] = Fz[index1,:,:]
                         result2=np.squeeze(Fz[index2,:,:])
                     else:
-                        fieldSrc[:,:] = np.fliplr(np.rot90(np.squeeze(Fz[index1,:,:]),3))
+                        fieldSrc[:,:] = np.fliplr(np.rot90(np.squeeze(Fz[index2,:,:]),3))
                         F2 = regridSrc2Dst(fieldSrc, fieldDst, zero_region=ESMF.Region.SELECT)
                         result2=F2.data
-                    result2[result2 < -1000] =  v1.add_offset + v1.scale_factor*UNDEF
                     
-                    v1[l,k,:,:] = result1*weight1 + result2*weight2
-                    print  "Min %s and max %s weights %s and %s"%(np.min(v1[l,k,:,:]),np.max(v1[l,k,:,:]),weight1,weight2)
+                    A = weight1*result1 + weight2*result2  # hovedregel
+                    I1, I2 = np.isnan(result1), np.isnan(result2)
+                    A[I1] = result2[I1]
+                    A[I2] = result1[I2]
+                    A[A < -1000] =  v1.add_offset + v1.scale_factor*UNDEF
+                    
+                    v1[l,k,:,:] = A
+                    print  "=> Min %s and max %s weights %s and %s"%(np.min(v1[l,k,:,:]),np.max(v1[l,k,:,:]),weight1,weight2)
                 # If the deepest depth in outlevels is deeper than what is found in inlevels,
                 # the depth levels data array is set to undefined. We dont want to extrapolate values
                 if outlevels[k] > np.max(inlevels):
